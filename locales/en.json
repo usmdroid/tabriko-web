@@ -1,0 +1,73 @@
+{
+  "common": {
+    "error": "Something went wrong.",
+    "loading": "Loading…",
+    "back": "← Back"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "lang": {
+    "uz": "O'zbekcha",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "nav": {
+    "qanday": "How it works",
+    "creatorlar": "Creators",
+    "savollar": "FAQ"
+  },
+  "marketing": {
+    "heroBadge": "Uzbekistan's #1 greeting platform",
+    "heroHeading": "A personal video greeting from your favourite celebrity",
+    "heroTagline": "Birthday, wedding, graduation — for any occasion",
+    "heroDesc": "TabrikO is the platform for ordering personalised video and audio greetings from celebrities, bloggers, and athletes. Download the app and get started.",
+    "heroCtaAppStore": "App Store",
+    "heroCtaPlayStore": "Google Play",
+    "statsCreatorsLabel": "Active creators",
+    "statsGreetingsLabel": "Greetings sent",
+    "statsHappyLabel": "Happy customers",
+    "howHeading": "How does it work?",
+    "step0Title": "Choose a creator",
+    "step0Text": "Browse profiles of celebrities and bloggers and check their price.",
+    "step1Title": "Place an order",
+    "step1Text": "Describe the occasion and the recipient — the creator makes a personal shout-out.",
+    "step2Title": "Receive the greeting",
+    "step2Text": "Within a few days your personalised video greeting arrives on your device.",
+    "creatorsHeading": "Popular creators",
+    "creatorsDesc": "Over a hundred famous personalities are waiting for you",
+    "categoryBloggers": "Bloggers",
+    "categorySingers": "Singers",
+    "categoryActors": "Actors",
+    "categoryAthletes": "Athletes",
+    "categoryComedians": "Comedians",
+    "categoryBusiness": "Business",
+    "whyHeading": "Why TabrikO?",
+    "why0Title": "Uzbek-first",
+    "why0Text": "Supporting local talent and content. The first greeting platform built for Uzbekistan.",
+    "why1Title": "Fair pricing",
+    "why1Text": "Each creator sets their own price — options for every budget.",
+    "why2Title": "Purpose-built",
+    "why2Text": "The platform does one thing: deliver your love through a celebrity.",
+    "why3Title": "Fast delivery",
+    "why3Text": "Most creators complete orders within 24–48 hours.",
+    "faqHeading": "Frequently asked questions",
+    "faq0Q": "How long does a greeting take?",
+    "faq0A": "Usually 24–48 hours. For some popular creators it may take a little longer.",
+    "faq1Q": "How much does it cost?",
+    "faq1A": "Each creator sets their own price, starting from 50,000 UZS.",
+    "faq2Q": "Who can I send a greeting to?",
+    "faq2A": "A friend, family member, colleague, or yourself — anyone you like.",
+    "faq3Q": "What if the creator declines my order?",
+    "faq3A": "You'll receive a full refund, no questions asked.",
+    "faq4Q": "What format is the greeting in?",
+    "faq4A": "Delivered as an MP4 video, quality guaranteed.",
+    "ctaHeading": "Order your first greeting today",
+    "ctaDesc": "Download the app and order a personalised greeting from your favourite celebrity.",
+    "ctaAppStore": "App Store",
+    "ctaPlayStore": "Google Play",
+    "footerTagline": "Personalised greetings from celebrities"
+  }
+}

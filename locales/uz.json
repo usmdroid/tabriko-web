@@ -1,0 +1,73 @@
+{
+  "common": {
+    "error": "Xatolik yuz berdi.",
+    "loading": "Yuklanmoqda…",
+    "back": "← Orqaga"
+  },
+  "theme": {
+    "light": "Kunduz",
+    "dark": "Tun",
+    "system": "Avto"
+  },
+  "lang": {
+    "uz": "O'zbekcha",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "nav": {
+    "qanday": "Qanday ishlaydi",
+    "creatorlar": "Creatorlar",
+    "savollar": "Savollar"
+  },
+  "marketing": {
+    "heroBadge": "O'zbekiston №1 tabrik platformasi",
+    "heroHeading": "Sevimli yulduzdan shaxsiy video tabrik",
+    "heroTagline": "Tug'ilgan kun, to'y, bitiruv — istalgan munosabat uchun",
+    "heroDesc": "TabrikO — taniqli shaxslar, blogerlar va sportchilardan shaxsiy video yoki audio tabrik buyurtma qilish platformasi. Mobil ilovani yuklab oling va boshlang.",
+    "heroCtaAppStore": "App Store",
+    "heroCtaPlayStore": "Google Play",
+    "statsCreatorsLabel": "Faol creator",
+    "statsGreetingsLabel": "Yuborilgan tabrik",
+    "statsHappyLabel": "Mamnun mijoz",
+    "howHeading": "Qanday ishlaydi?",
+    "step0Title": "Creatorni tanlang",
+    "step0Text": "O'zingizga yoqqan yulduz yoki blogger profilini oching va narxini ko'ring.",
+    "step1Title": "Buyurtma bering",
+    "step1Text": "Munosabat va tabrik yuboriladigan shaxs haqida qisqacha yozing — creator shaxsiy murojaat qiladi.",
+    "step2Title": "Tabrikni qabul qiling",
+    "step2Text": "Bir necha kun ichida shaxsiy video tabrik qurilmangizga yetib keladi.",
+    "creatorsHeading": "Mashhur creatorlar",
+    "creatorsDesc": "Yuz dan ortiq taniqli shaxs sizni kutmoqda",
+    "categoryBloggers": "Blogerlar",
+    "categorySingers": "Qo'shiqchilar",
+    "categoryActors": "Aktyorlar",
+    "categoryAthletes": "Sportchilar",
+    "categoryComedians": "Yumoristlar",
+    "categoryBusiness": "Biznes",
+    "whyHeading": "Nega TabrikO?",
+    "why0Title": "O'zbekcha",
+    "why0Text": "Mahalliy yulduzlar va kontentni qo'llab-quvvatlash. O'zbekistonga mo'ljallangan birinchi tabrik platformasi.",
+    "why1Title": "Qulay narx",
+    "why1Text": "Har bir creator o'z narxini belgilaydi — barcha byudjet uchun variantlar mavjud.",
+    "why2Title": "Faqat tabrik",
+    "why2Text": "Platforma bitta narsaga ixtisoslashgan: sizning sevgingizni yulduz orqali yetkazish.",
+    "why3Title": "Tez yetkazish",
+    "why3Text": "Ko'pchilik creatorlar buyurtmani 24–48 soat ichida bajaradi.",
+    "faqHeading": "Ko'p so'raladigan savollar",
+    "faq0Q": "Tabrik qancha vaqt ichida tayyorlanadi?",
+    "faq0A": "Odatda 24–48 soat. Ba'zi mashhur creatorlar uchun muddat biroz uzunroq bo'lishi mumkin.",
+    "faq1Q": "Narxlar qancha?",
+    "faq1A": "Har bir creator o'z narxini mustaqil belgilaydi — 50 000 so'mdan boshlab.",
+    "faq2Q": "Tabrikni kimga yuborish mumkin?",
+    "faq2A": "Do'stingizga, oila a'zolaringizga, hamkasblaringizga yoki o'zingizga — istalgan kishiga.",
+    "faq3Q": "Creator buyurtmani rad etsa nima bo'ladi?",
+    "faq3A": "To'lov to'liq qaytariladi, xavotir olmang.",
+    "faq4Q": "Qaysi formatda keladi?",
+    "faq4A": "MP4 video formatida yuboriladi, sifat kafolatlangan.",
+    "ctaHeading": "Birinchi tabrikni hozir buyurtma qiling",
+    "ctaDesc": "Ilovani yuklab oling va sevimli yulduzingizdan shaxsiy tabrik buyurtma qiling.",
+    "ctaAppStore": "App Store",
+    "ctaPlayStore": "Google Play",
+    "footerTagline": "Yulduzlardan shaxsiy tabrik"
+  }
+}
