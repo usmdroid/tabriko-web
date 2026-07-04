@@ -1,1 +1,0 @@
-Manual: fix admin panel infinite fetch loop — getSession() parsed localStorage into a new object every render, making useCallback/useEffect deps unstable. Wrapped in useMemo(() => getSession(), []) across admin users/creators/orders/moderation/stats pages so session is read once. lint + build clean.
