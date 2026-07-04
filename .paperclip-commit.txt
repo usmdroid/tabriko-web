@@ -1,0 +1,1 @@
+Manual: point web NEXT_PUBLIC_API_BASE to Render test backend (.env.local, gitignored) and widen admin staffLogin mock fallback to fire on any ApiError (backend has no /staff/auth/login yet) so admin/admin123 & mod/mod123 still work against the live host. Marked //FIXME.

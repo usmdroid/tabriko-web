@@ -146,8 +146,9 @@ export async function staffLogin(phone: string, password: string): Promise<Staff
     const res = await post<StaffSession>("/staff/auth/login", { phone, password });
     return res.data;
   } catch (e) {
-    // Backend not available → allow mock credentials for development
-    if (e instanceof ApiError && e.httpStatus === 0) {
+    // FIXME: backend has no /staff/auth/login yet — allow mock credentials for
+    // any API error (network down OR 404/5xx). Remove once staff auth is live.
+    if (e instanceof ApiError) {
       if (phone === "admin" && password === "admin123") {
         return { token: "mock-token-superadmin", role: "SUPERADMIN", name: "Super Admin" };
       }
