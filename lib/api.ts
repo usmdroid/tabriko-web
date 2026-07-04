@@ -2,8 +2,12 @@ import * as Sentry from "@sentry/nextjs";
 
 // Default points to the Render test backend (api.tabriko.uz is not live yet).
 // Override per-environment via NEXT_PUBLIC_API_BASE (baked at build time).
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "https://tabriko-backend.onrender.com/api/v1";
+// Whitespace and trailing slashes are stripped so an env value like
+// ".../api/v1/" or ".../api/v1 " (trailing space) doesn't produce a broken
+// path (".../api/v1//auth/..." or ".../api/v1%20/auth/...") that 401s.
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_BASE ?? "https://tabriko-backend.onrender.com/api/v1"
+).trim().replace(/\/+$/, "");
 
 export interface ApiMessage {
   code: string;
