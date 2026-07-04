@@ -1,7 +1,9 @@
 import * as Sentry from "@sentry/nextjs";
 
+// Default points to the Render test backend (api.tabriko.uz is not live yet).
+// Override per-environment via NEXT_PUBLIC_API_BASE (baked at build time).
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "https://api.tabriko.uz/api/v1";
+  process.env.NEXT_PUBLIC_API_BASE ?? "https://tabriko-backend.onrender.com/api/v1";
 
 export interface ApiMessage {
   code: string;
