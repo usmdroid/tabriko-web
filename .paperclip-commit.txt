@@ -1,0 +1,16 @@
+USM-245: wire admin panel to real backend + OTP login (remove mocks)
+
+- lib/admin-api.ts: full rewrite — removed all MOCK_* + fallbacks; OTP sendOtp/verifyOtp
+  against /auth/send-otp + /auth/verify-otp; /staff/* -> /admin/*; moderation via
+  /moderation/reports with RESOLVED/DISMISSED; orders/reports read .data.content;
+  DTO->FE mappers (creator verified/top/exclusive, all 6 OrderStatus values,
+  role, dates); 401 -> admin:401 event, other errors surface empty+error (no mocks).
+- app/(app)/admin/login/page.tsx: password -> 2-step OTP + SUPERADMIN/MODERATOR RBAC gate.
+- app/(app)/admin/{orders,moderation,creators}/page.tsx: real data, full status set,
+  RESOLVED/DISMISSED actions, categoryId numeric input, loading/empty/error states.
+- stats/settings/users pages degrade to empty+error (backend endpoints tracked in USM-261).
+
+Pipeline: dev (USM-260) -> review (USM-265) -> test (USM-266, found 2 bugs) ->
+fix (USM-267) -> re-test (USM-268 PASS). Build + lint clean.
+
+Co-Authored-By: Paperclip <noreply@paperclip.ing>

@@ -1,6 +1,6 @@
 import { get, post, patch, ApiError } from "./api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Public Types ─────────────────────────────────────────────────────────────
 
 export type StaffRole = "SUPERADMIN" | "MODERATOR";
 
@@ -21,11 +21,9 @@ export interface AdminUser {
 export interface AdminCreator {
   id: string;
   name: string;
-  phone: string;
   category: string;
   verified: boolean;
   flag?: "top" | "exclusive";
-  createdAt: string;
 }
 
 export interface AdminOrder {
@@ -34,17 +32,18 @@ export interface AdminOrder {
   userName: string;
   creatorId: string;
   creatorName: string;
-  status: "pending" | "in_progress" | "done" | "refunded";
+  status: "pending" | "in_progress" | "delivered" | "accepted" | "rejected" | "refunded";
   amount: number;
   createdAt: string;
 }
 
 export interface ModerationItem {
-  id: string;
-  creatorName: string;
-  type: "greeting";
+  id: number;
+  reporterId: string;
+  targetType: string;
+  targetId: string;
   reason: string;
-  status: "flagged" | "under_review";
+  status: "OPEN" | "RESOLVED" | "DISMISSED";
   createdAt: string;
 }
 
@@ -61,6 +60,122 @@ export interface PlatformSettings {
   ordersOpen: boolean;
   maintenanceMode: boolean;
   registrationOpen: boolean;
+}
+
+// ─── Backend response shapes ──────────────────────────────────────────────────
+
+interface BackendCreatorResponse {
+  id: string;
+  name: string;
+  category?: { id: number; name: string };
+  verified: boolean;
+  top: boolean;
+  exclusive: boolean;
+}
+
+interface BackendOrderResponse {
+  id: string;
+  clientId: string;
+  clientName: string;
+  creatorId: string;
+  creatorName: string;
+  price: number | string;
+  status: string;
+  createdAt: string;
+}
+
+interface BackendReportResponse {
+  id: number;
+  reporterId: string;
+  targetType: string;
+  targetId: string;
+  reason: string;
+  status: string;
+  createdAt: string;
+}
+
+interface BackendPageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+interface BackendUserResponse {
+  id: string;
+  name: string;
+  phone: string;
+  status: string;
+  createdAt: string;
+}
+
+// ─── Mappers ──────────────────────────────────────────────────────────────────
+
+function formatDate(raw: string | number | null | undefined): string {
+  if (raw == null) return "—";
+  try {
+    return new Date(raw).toLocaleDateString("uz-UZ");
+  } catch {
+    return String(raw);
+  }
+}
+
+function mapOrderStatus(s: string): AdminOrder["status"] {
+  const map: Record<string, AdminOrder["status"]> = {
+    PENDING: "pending",
+    IN_PROGRESS: "in_progress",
+    DELIVERED: "delivered",
+    ACCEPTED: "accepted",
+    REJECTED: "rejected",
+    REFUNDED: "refunded",
+  };
+  return map[s.toUpperCase()] ?? (s.toLowerCase() as AdminOrder["status"]);
+}
+
+function mapCreator(c: BackendCreatorResponse): AdminCreator {
+  return {
+    id: c.id,
+    name: c.name,
+    category: c.category?.name ?? "—",
+    verified: c.verified,
+    flag: c.top ? "top" : c.exclusive ? "exclusive" : undefined,
+  };
+}
+
+function mapOrder(o: BackendOrderResponse): AdminOrder {
+  return {
+    id: o.id,
+    userId: o.clientId,
+    userName: o.clientName ?? "—",
+    creatorId: o.creatorId,
+    creatorName: o.creatorName ?? "—",
+    amount: Number(o.price),
+    status: mapOrderStatus(o.status),
+    createdAt: formatDate(o.createdAt),
+  };
+}
+
+function mapUser(u: BackendUserResponse): AdminUser {
+  return {
+    id: u.id,
+    name: u.name ?? "—",
+    phone: u.phone ?? "—",
+    status: (u.status as AdminUser["status"]) ?? "active",
+    createdAt: formatDate(u.createdAt),
+  };
+}
+
+function mapReport(r: BackendReportResponse): ModerationItem {
+  return {
+    id: r.id,
+    reporterId: r.reporterId,
+    targetType: r.targetType,
+    targetId: r.targetId,
+    reason: r.reason,
+    status: (r.status as ModerationItem["status"]) ?? "OPEN",
+    createdAt: formatDate(r.createdAt),
+  };
 }
 
 // ─── Session helpers ──────────────────────────────────────────────────────────
@@ -97,67 +212,24 @@ function rethrow401(e: unknown): never {
   throw e;
 }
 
-// ─── Mock data ─────────────────────────────────────────────────────────────────
-
-const MOCK_USERS: AdminUser[] = [
-  { id: "u1", name: "Alisher Umarov", phone: "+998901234567", status: "active", createdAt: "2024-01-10" },
-  { id: "u2", name: "Mohira Karimova", phone: "+998917654321", status: "blocked", createdAt: "2024-02-05" },
-  { id: "u3", name: "Jasur Toshmatov", phone: "+998931112233", status: "active", createdAt: "2024-03-20" },
-  { id: "u4", name: "Dilnoza Yusupova", phone: "+998945556677", status: "active", createdAt: "2024-04-01" },
-];
-
-const MOCK_CREATORS: AdminCreator[] = [
-  { id: "c1", name: "Sherzod Umarov", phone: "+998901111111", category: "Bloger", verified: true, flag: "top", createdAt: "2024-01-01" },
-  { id: "c2", name: "Nilufar Rahimova", phone: "+998902222222", category: "Qo'shiqchi", verified: true, flag: "exclusive", createdAt: "2024-02-15" },
-  { id: "c3", name: "Bobur Xolmatov", phone: "+998903333333", category: "Sportchi", verified: false, createdAt: "2024-05-10" },
-];
-
-const MOCK_ORDERS: AdminOrder[] = [
-  { id: "o1", userId: "u1", userName: "Alisher Umarov", creatorId: "c1", creatorName: "Sherzod Umarov", status: "pending", amount: 150000, createdAt: "2024-07-01" },
-  { id: "o2", userId: "u2", userName: "Mohira Karimova", creatorId: "c2", creatorName: "Nilufar Rahimova", status: "done", amount: 200000, createdAt: "2024-06-28" },
-  { id: "o3", userId: "u3", userName: "Jasur Toshmatov", creatorId: "c1", creatorName: "Sherzod Umarov", status: "in_progress", amount: 150000, createdAt: "2024-07-02" },
-  { id: "o4", userId: "u4", userName: "Dilnoza Yusupova", creatorId: "c3", creatorName: "Bobur Xolmatov", status: "refunded", amount: 100000, createdAt: "2024-06-20" },
-];
-
-const MOCK_MODERATION: ModerationItem[] = [
-  { id: "m1", creatorName: "Sherzod Umarov", type: "greeting", reason: "Noto'g'ri kontent", status: "flagged", createdAt: "2024-07-02" },
-  { id: "m2", creatorName: "Bobur Xolmatov", type: "greeting", reason: "Shikoyat qilingan", status: "under_review", createdAt: "2024-07-01" },
-];
-
-const MOCK_STATS: AdminStats = {
-  revenue: 12500000,
-  activeCreators: 42,
-  totalUsers: 1287,
-  pendingOrders: 8,
-  totalOrders: 534,
-  moderationQueue: 3,
-};
-
-const MOCK_SETTINGS: PlatformSettings = {
-  ordersOpen: true,
-  maintenanceMode: false,
-  registrationOpen: true,
-};
-
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-export async function staffLogin(phone: string, password: string): Promise<StaffSession> {
-  try {
-    const res = await post<StaffSession>("/staff/auth/login", { phone, password });
-    return res.data;
-  } catch (e) {
-    // FIXME: backend has no /staff/auth/login yet — allow mock credentials for
-    // any API error (network down OR 404/5xx). Remove once staff auth is live.
-    if (e instanceof ApiError) {
-      if (phone === "admin" && password === "admin123") {
-        return { token: "mock-token-superadmin", role: "SUPERADMIN", name: "Super Admin" };
-      }
-      if (phone === "mod" && password === "mod123") {
-        return { token: "mock-token-moderator", role: "MODERATOR", name: "Moderator" };
-      }
-    }
-    throw e;
-  }
+export async function sendOtp(phone: string): Promise<void> {
+  await post("/auth/send-otp", { phone });
+}
+
+export async function verifyOtp(phone: string, code: string): Promise<StaffSession> {
+  const res = await post<{
+    accessToken: string;
+    refreshToken: string;
+    user: { id: string; phone: string; name?: string; role: string };
+  }>("/auth/verify-otp", { phone, code });
+  const { accessToken, user } = res.data;
+  return {
+    token: accessToken,
+    role: user.role as StaffRole,
+    name: user.name ?? user.phone,
+  };
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -167,96 +239,114 @@ export async function fetchUsers(
   params?: { search?: string; status?: string },
 ): Promise<AdminUser[]> {
   try {
-    const q = params ? new URLSearchParams(params as Record<string, string>).toString() : "";
-    const res = await get<AdminUser[]>(`/staff/users${q ? `?${q}` : ""}`, token);
-    return res.data;
+    const entries = Object.entries(params ?? {}).filter(([, v]) => v);
+    const q = entries.length ? "?" + new URLSearchParams(Object.fromEntries(entries) as Record<string, string>).toString() : "";
+    const res = await get<BackendUserResponse[]>(`/admin/users${q}`, token);
+    return (res.data ?? []).map(mapUser);
   } catch (e) {
-    if (e instanceof ApiError && e.httpStatus === 401) rethrow401(e);
-    return MOCK_USERS;
+    return rethrow401(e);
   }
 }
 
 export async function blockUser(token: string, id: string) {
-  return post(`/staff/users/${id}/block`, {}, token);
+  try {
+    return await post(`/admin/users/${id}/block`, {}, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
 }
 
 export async function unblockUser(token: string, id: string) {
-  return post(`/staff/users/${id}/unblock`, {}, token);
+  try {
+    return await post(`/admin/users/${id}/unblock`, {}, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
 }
 
 // ─── Creators ────────────────────────────────────────────────────────────────
 
 export async function fetchCreators(token: string): Promise<AdminCreator[]> {
   try {
-    const res = await get<AdminCreator[]>("/staff/creators", token);
-    return res.data;
+    const res = await get<BackendCreatorResponse[]>("/admin/creators", token);
+    return (res.data ?? []).map(mapCreator);
   } catch (e) {
-    if (e instanceof ApiError && e.httpStatus === 401) rethrow401(e);
-    return MOCK_CREATORS;
+    return rethrow401(e);
   }
 }
 
 export async function addCreator(
   token: string,
-  data: { name: string; phone: string; category: string },
+  data: { name: string; phone: string; categoryId: number; bio?: string; priceFrom?: number; deliveryDays?: number },
 ) {
-  return post("/staff/creators", data, token);
+  try {
+    return await post("/admin/creators", data, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
 }
 
 export async function verifyCreator(token: string, id: string) {
-  return post(`/staff/creators/${id}/verify`, {}, token);
-}
-
-export async function flagCreator(token: string, id: string, flag: "top" | "exclusive") {
-  return post(`/staff/creators/${id}/flag`, { flag }, token);
+  try {
+    return await post(`/admin/creators/${id}/verify`, {}, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
 }
 
 // ─── Orders ──────────────────────────────────────────────────────────────────
 
-export async function fetchOrders(token: string, status?: string): Promise<AdminOrder[]> {
+export async function fetchOrders(token: string): Promise<AdminOrder[]> {
   try {
-    const q = status ? `?status=${status}` : "";
-    const res = await get<AdminOrder[]>(`/staff/orders${q}`, token);
-    return res.data;
+    const res = await get<BackendPageResponse<BackendOrderResponse>>("/admin/orders?page=0&size=100", token);
+    return (res.data?.content ?? []).map(mapOrder);
   } catch (e) {
-    if (e instanceof ApiError && e.httpStatus === 401) rethrow401(e);
-    return status ? MOCK_ORDERS.filter((o) => o.status === status) : MOCK_ORDERS;
+    return rethrow401(e);
   }
-}
-
-export async function refundOrder(token: string, id: string) {
-  return post(`/staff/orders/${id}/refund`, {}, token);
 }
 
 // ─── Moderation ───────────────────────────────────────────────────────────────
 
 export async function fetchModeration(token: string): Promise<ModerationItem[]> {
   try {
-    const res = await get<ModerationItem[]>("/staff/moderation", token);
-    return res.data;
+    const res = await get<BackendPageResponse<BackendReportResponse>>("/moderation/reports?page=0&size=50", token);
+    return (res.data?.content ?? []).map(mapReport);
   } catch (e) {
-    if (e instanceof ApiError && e.httpStatus === 401) rethrow401(e);
-    return MOCK_MODERATION;
+    return rethrow401(e);
   }
 }
 
-export async function approveModeration(token: string, id: string) {
-  return post(`/staff/moderation/${id}/approve`, {}, token);
+export async function resolveReport(token: string, id: number) {
+  try {
+    return await patch(`/moderation/reports/${id}/status`, { status: "RESOLVED" }, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
 }
 
-export async function hideModeration(token: string, id: string) {
-  return post(`/staff/moderation/${id}/hide`, {}, token);
+export async function dismissReport(token: string, id: number) {
+  try {
+    return await patch(`/moderation/reports/${id}/status`, { status: "DISMISSED" }, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
 }
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 
 export async function fetchStats(token: string): Promise<AdminStats> {
   try {
-    const res = await get<AdminStats>("/staff/stats", token);
-    return res.data;
+    const res = await get<AdminStats>("/admin/stats", token);
+    return {
+      revenue: Number(res.data.revenue ?? 0),
+      activeCreators: Number(res.data.activeCreators ?? 0),
+      totalUsers: Number(res.data.totalUsers ?? 0),
+      pendingOrders: Number(res.data.pendingOrders ?? 0),
+      totalOrders: Number(res.data.totalOrders ?? 0),
+      moderationQueue: Number(res.data.moderationQueue ?? 0),
+    };
   } catch (e) {
-    if (e instanceof ApiError && e.httpStatus === 401) rethrow401(e);
-    return { ...MOCK_STATS };
+    return rethrow401(e);
   }
 }
 
@@ -264,14 +354,17 @@ export async function fetchStats(token: string): Promise<AdminStats> {
 
 export async function fetchSettings(token: string): Promise<PlatformSettings> {
   try {
-    const res = await get<PlatformSettings>("/staff/settings", token);
+    const res = await get<PlatformSettings>("/admin/settings", token);
     return res.data;
   } catch (e) {
-    if (e instanceof ApiError && e.httpStatus === 401) rethrow401(e);
-    return { ...MOCK_SETTINGS };
+    return rethrow401(e);
   }
 }
 
 export async function updateSettings(token: string, data: Partial<PlatformSettings>) {
-  return patch("/staff/settings", data, token);
+  try {
+    return await patch("/admin/settings", data, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
 }

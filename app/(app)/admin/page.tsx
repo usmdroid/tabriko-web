@@ -40,6 +40,7 @@ export default function AdminUsersPage() {
       setUsers(data);
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
+      else setError("Ma'lumot mavjud emas.");
     } finally {
       setLoading(false);
     }
@@ -67,6 +68,7 @@ export default function AdminUsersPage() {
       );
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
+      else setError("Amal bajarilmadi.");
     } finally {
       setBusy((b) => ({ ...b, [user.id]: false }));
     }

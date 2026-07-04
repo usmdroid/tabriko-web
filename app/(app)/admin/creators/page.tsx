@@ -7,7 +7,6 @@ import {
   fetchCreators,
   addCreator,
   verifyCreator,
-  flagCreator,
   AdminCreator,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
@@ -26,7 +25,7 @@ export default function AdminCreatorsPage() {
   // Add creator form state
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
-  const [newCategory, setNewCategory] = useState("");
+  const [newCategoryId, setNewCategoryId] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -40,6 +39,7 @@ export default function AdminCreatorsPage() {
       setCreators(await fetchCreators(session.token));
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
+      else setError("Ma'lumot mavjud emas.");
     } finally {
       setLoading(false);
     }
@@ -64,37 +64,26 @@ export default function AdminCreatorsPage() {
     }
   }
 
-  async function handleFlag(creator: AdminCreator, flag: "top" | "exclusive") {
-    if (!session) return;
-    const key = `${creator.id}-flag`;
-    setBusy((b) => ({ ...b, [key]: true }));
-    try {
-      await flagCreator(session.token, creator.id, flag);
-      setCreators((prev) =>
-        prev.map((c) => (c.id === creator.id ? { ...c, flag } : c)),
-      );
-    } catch (e) {
-      if (e instanceof ApiError) setError(e.message);
-    } finally {
-      setBusy((b) => ({ ...b, [key]: false }));
-    }
-  }
-
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!session) return;
+    const categoryId = parseInt(newCategoryId, 10);
+    if (isNaN(categoryId) || categoryId <= 0) {
+      setAddError("Kategoriya ID raqam bo'lishi kerak.");
+      return;
+    }
     setAdding(true);
     setAddError("");
     try {
       await addCreator(session.token, {
         name: newName,
         phone: newPhone,
-        category: newCategory,
+        categoryId,
       });
       setShowAdd(false);
       setNewName("");
       setNewPhone("");
-      setNewCategory("");
+      setNewCategoryId("");
       await load();
     } catch (err) {
       if (err instanceof ApiError) setAddError(err.message);
@@ -130,7 +119,6 @@ export default function AdminCreatorsPage() {
             <thead>
               <tr className="border-b border-line text-left text-xs text-muted">
                 <th className="px-4 py-3 font-medium">Ism</th>
-                <th className="px-4 py-3 font-medium">Telefon</th>
                 <th className="px-4 py-3 font-medium">Kategoriya</th>
                 <th className="px-4 py-3 font-medium">Holati</th>
                 <th className="px-4 py-3 font-medium">Flag</th>
@@ -141,7 +129,7 @@ export default function AdminCreatorsPage() {
               {loading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <tr key={i} className="border-b border-line">
-                    {Array.from({ length: 6 }).map((__, j) => (
+                    {Array.from({ length: 5 }).map((__, j) => (
                       <td key={j} className="px-4 py-3">
                         <Skeleton className="h-4 w-20" />
                       </td>
@@ -150,7 +138,7 @@ export default function AdminCreatorsPage() {
                 ))
               ) : creators.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted">
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted">
                     Kreatorlar topilmadi
                   </td>
                 </tr>
@@ -161,7 +149,6 @@ export default function AdminCreatorsPage() {
                     className="border-b border-line last:border-0 hover:bg-card/50 transition-colors"
                   >
                     <td className="px-4 py-3 font-medium text-primary">{creator.name}</td>
-                    <td className="px-4 py-3 text-muted">{creator.phone}</td>
                     <td className="px-4 py-3 text-muted">{creator.category}</td>
                     <td className="px-4 py-3">
                       <span
@@ -184,31 +171,16 @@ export default function AdminCreatorsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {!creator.verified && (
-                          <button
-                            onClick={() => handleVerify(creator)}
-                            disabled={busy[creator.id]}
-                            className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-green-500 hover:text-green-600 transition-colors disabled:opacity-50"
-                          >
-                            {busy[creator.id] ? <Spinner size={11} /> : <CheckCircle size={11} />}
-                            Tasdiqlash
-                          </button>
-                        )}
-                        <select
-                          disabled={busy[`${creator.id}-flag`]}
-                          value={creator.flag ?? ""}
-                          onChange={(e) => {
-                            const v = e.target.value as "top" | "exclusive";
-                            if (v) handleFlag(creator, v);
-                          }}
-                          className="rounded-lg border border-line bg-surface px-2 py-1.5 text-xs text-muted focus:outline-none focus:border-accent"
+                      {!creator.verified && (
+                        <button
+                          onClick={() => handleVerify(creator)}
+                          disabled={busy[creator.id]}
+                          className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-green-500 hover:text-green-600 transition-colors disabled:opacity-50"
                         >
-                          <option value="">Flag</option>
-                          <option value="top">Top</option>
-                          <option value="exclusive">Exclusive</option>
-                        </select>
-                      </div>
+                          {busy[creator.id] ? <Spinner size={11} /> : <CheckCircle size={11} />}
+                          Tasdiqlash
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -267,13 +239,14 @@ export default function AdminCreatorsPage() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Kategoriya</label>
+              <label className="text-xs font-medium text-muted">Kategoriya ID</label>
               <input
-                type="text"
+                type="number"
                 required
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="Bloger, Qo'shiqchi..."
+                min={1}
+                value={newCategoryId}
+                onChange={(e) => setNewCategoryId(e.target.value)}
+                placeholder="1"
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
               />
             </div>
