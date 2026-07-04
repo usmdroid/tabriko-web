@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { CheckCircle, EyeOff } from "lucide-react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { CheckCircle, XCircle } from "lucide-react";
 import {
   getSession,
   fetchModeration,
-  approveModeration,
-  hideModeration,
+  resolveReport,
+  dismissReport,
   ModerationItem,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
@@ -14,13 +14,15 @@ import { Skeleton } from "@/app/components/Skeleton";
 import { Spinner } from "@/app/components/Spinner";
 
 const STATUS_BADGE: Record<ModerationItem["status"], string> = {
-  flagged: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  under_review: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  OPEN: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  RESOLVED: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  DISMISSED: "bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400",
 };
 
 const STATUS_LABEL: Record<ModerationItem["status"], string> = {
-  flagged: "Belgilangan",
-  under_review: "Ko'rib chiqilmoqda",
+  OPEN: "Ochiq",
+  RESOLVED: "Hal qilindi",
+  DISMISSED: "Rad etildi",
 };
 
 export default function AdminModerationPage() {
@@ -29,7 +31,9 @@ export default function AdminModerationPage() {
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
 
-  const session = getSession();
+  // Read session once (getSession parses localStorage -> new object each call, which
+  // would otherwise make useCallback/useEffect deps unstable and loop).
+  const session = useMemo(() => getSession(), []);
 
   const load = useCallback(async () => {
     if (!session) return;
@@ -39,6 +43,7 @@ export default function AdminModerationPage() {
       setItems(await fetchModeration(session.token));
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
+      else setError("Ma'lumot mavjud emas.");
     } finally {
       setLoading(false);
     }
@@ -48,31 +53,37 @@ export default function AdminModerationPage() {
     load();
   }, [load]);
 
-  async function handleApprove(item: ModerationItem) {
+  async function handleResolve(item: ModerationItem) {
     if (!session) return;
-    setBusy((b) => ({ ...b, [`${item.id}-approve`]: true }));
+    setBusy((b) => ({ ...b, [`${item.id}-resolve`]: true }));
     try {
-      await approveModeration(session.token, item.id);
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      await resolveReport(session.token, item.id);
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, status: "RESOLVED" } : i)),
+      );
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
     } finally {
-      setBusy((b) => ({ ...b, [`${item.id}-approve`]: false }));
+      setBusy((b) => ({ ...b, [`${item.id}-resolve`]: false }));
     }
   }
 
-  async function handleHide(item: ModerationItem) {
+  async function handleDismiss(item: ModerationItem) {
     if (!session) return;
-    setBusy((b) => ({ ...b, [`${item.id}-hide`]: true }));
+    setBusy((b) => ({ ...b, [`${item.id}-dismiss`]: true }));
     try {
-      await hideModeration(session.token, item.id);
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      await dismissReport(session.token, item.id);
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, status: "DISMISSED" } : i)),
+      );
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
     } finally {
-      setBusy((b) => ({ ...b, [`${item.id}-hide`]: false }));
+      setBusy((b) => ({ ...b, [`${item.id}-dismiss`]: false }));
     }
   }
+
+  const openCount = items.filter((i) => i.status === "OPEN").length;
 
   return (
     <div>
@@ -88,8 +99,12 @@ export default function AdminModerationPage() {
         <div className="surface-card flex flex-col items-center justify-center py-16 text-muted">
           <CheckCircle size={32} className="mb-3 text-green-500" />
           <p className="text-sm font-medium">Moderatsiya uchun element yo&apos;q</p>
-          <p className="text-xs mt-1">Barcha tabriklar ko&apos;rib chiqilgan</p>
+          <p className="text-xs mt-1">Barcha shikoyatlar ko&apos;rib chiqilgan</p>
         </div>
+      )}
+
+      {!loading && items.length > 0 && openCount === 0 && (
+        <p className="mb-4 text-sm text-muted">Barcha shikoyatlar ko&apos;rib chiqilgan.</p>
       )}
 
       {(loading || items.length > 0) && (
@@ -98,8 +113,8 @@ export default function AdminModerationPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs text-muted">
-                  <th className="px-4 py-3 font-medium">Kreator</th>
                   <th className="px-4 py-3 font-medium">Tur</th>
+                  <th className="px-4 py-3 font-medium">Maqsad</th>
                   <th className="px-4 py-3 font-medium">Sabab</th>
                   <th className="px-4 py-3 font-medium">Holati</th>
                   <th className="px-4 py-3 font-medium">Sana</th>
@@ -123,8 +138,10 @@ export default function AdminModerationPage() {
                       key={item.id}
                       className="border-b border-line last:border-0 hover:bg-card/50 transition-colors"
                     >
-                      <td className="px-4 py-3 font-medium text-primary">{item.creatorName}</td>
-                      <td className="px-4 py-3 text-muted capitalize">{item.type}</td>
+                      <td className="px-4 py-3 text-muted capitalize">{item.targetType}</td>
+                      <td className="px-4 py-3 text-muted font-mono text-xs">
+                        {String(item.targetId).slice(0, 8)}…
+                      </td>
                       <td className="px-4 py-3 text-muted max-w-[180px] truncate">{item.reason}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[item.status]}`}>
@@ -133,32 +150,34 @@ export default function AdminModerationPage() {
                       </td>
                       <td className="px-4 py-3 text-muted">{item.createdAt}</td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleApprove(item)}
-                            disabled={busy[`${item.id}-approve`]}
-                            className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-green-500 hover:text-green-600 transition-colors disabled:opacity-50"
-                          >
-                            {busy[`${item.id}-approve`] ? (
-                              <Spinner size={11} />
-                            ) : (
-                              <CheckCircle size={11} />
-                            )}
-                            Tasdiqlash
-                          </button>
-                          <button
-                            onClick={() => handleHide(item)}
-                            disabled={busy[`${item.id}-hide`]}
-                            className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-red-400 hover:text-red-500 transition-colors disabled:opacity-50"
-                          >
-                            {busy[`${item.id}-hide`] ? (
-                              <Spinner size={11} />
-                            ) : (
-                              <EyeOff size={11} />
-                            )}
-                            Yashirish
-                          </button>
-                        </div>
+                        {item.status === "OPEN" && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleResolve(item)}
+                              disabled={busy[`${item.id}-resolve`]}
+                              className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-green-500 hover:text-green-600 transition-colors disabled:opacity-50"
+                            >
+                              {busy[`${item.id}-resolve`] ? (
+                                <Spinner size={11} />
+                              ) : (
+                                <CheckCircle size={11} />
+                              )}
+                              Hal qilindi
+                            </button>
+                            <button
+                              onClick={() => handleDismiss(item)}
+                              disabled={busy[`${item.id}-dismiss`]}
+                              className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-red-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                            >
+                              {busy[`${item.id}-dismiss`] ? (
+                                <Spinner size={11} />
+                              ) : (
+                                <XCircle size={11} />
+                              )}
+                              Rad etildi
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))
