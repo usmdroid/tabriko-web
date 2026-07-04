@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   getSession,
   fetchOrders,
@@ -49,7 +49,9 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
   const [error, setError] = useState("");
 
-  const session = getSession();
+  // Read session once (getSession parses localStorage -> new object each call, which
+  // would otherwise make useCallback/useEffect deps unstable and loop).
+  const session = useMemo(() => getSession(), []);
 
   const orders = statusFilter
     ? allOrders.filter((o) => o.status === statusFilter)

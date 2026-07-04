@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { CheckCircle, XCircle } from "lucide-react";
 import {
   getSession,
@@ -31,7 +31,9 @@ export default function AdminModerationPage() {
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
 
-  const session = getSession();
+  // Read session once (getSession parses localStorage -> new object each call, which
+  // would otherwise make useCallback/useEffect deps unstable and loop).
+  const session = useMemo(() => getSession(), []);
 
   const load = useCallback(async () => {
     if (!session) return;

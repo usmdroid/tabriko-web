@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Plus, CheckCircle, X } from "lucide-react";
 import {
   getSession,
@@ -29,7 +29,9 @@ export default function AdminCreatorsPage() {
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
-  const session = getSession();
+  // Read session once (getSession parses localStorage -> new object each call, which
+  // would otherwise make useCallback/useEffect deps unstable and loop).
+  const session = useMemo(() => getSession(), []);
 
   const load = useCallback(async () => {
     if (!session) return;
