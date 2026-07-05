@@ -3,6 +3,7 @@ import { get, post, patch, ApiError } from "./api";
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
 export type StaffRole = "SUPERADMIN" | "MODERATOR";
+export type CreatorTier = "STANDARD" | "RISING" | "TOP" | "CELEBRITY";
 
 export interface StaffSession {
   token: string;
@@ -24,6 +25,17 @@ export interface AdminCreator {
   category: string;
   verified: boolean;
   flag?: "top" | "exclusive";
+  tier?: CreatorTier;
+}
+
+export interface AddCreatorRequest {
+  name: string;
+  phone: string;
+  categoryId: number;
+  tier?: CreatorTier;
+  bio?: string;
+  priceFrom?: number;
+  deliveryDays?: number;
 }
 
 export interface AdminOrder {
@@ -71,6 +83,7 @@ interface BackendCreatorResponse {
   verified: boolean;
   top: boolean;
   exclusive: boolean;
+  tier?: string;
 }
 
 interface BackendOrderResponse {
@@ -140,6 +153,7 @@ function mapCreator(c: BackendCreatorResponse): AdminCreator {
     category: c.category?.name ?? "—",
     verified: c.verified,
     flag: c.top ? "top" : c.exclusive ? "exclusive" : undefined,
+    tier: (c.tier as CreatorTier) ?? undefined,
   };
 }
 
@@ -218,18 +232,22 @@ export async function sendOtp(phone: string): Promise<void> {
   await post("/auth/send-otp", { phone });
 }
 
-export async function verifyOtp(phone: string, code: string): Promise<StaffSession> {
+export async function login(phone: string, password: string): Promise<StaffSession> {
   const res = await post<{
     accessToken: string;
     refreshToken: string;
     user: { id: string; phone: string; name?: string; role: string };
-  }>("/auth/verify-otp", { phone, code });
+  }>("/auth/login", { phone, password });
   const { accessToken, user } = res.data;
   return {
     token: accessToken,
     role: user.role as StaffRole,
     name: user.name ?? user.phone,
   };
+}
+
+export async function resetPassword(phone: string, code: string, newPassword: string): Promise<void> {
+  await post("/auth/reset-password", { phone, code, newPassword });
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -275,10 +293,7 @@ export async function fetchCreators(token: string): Promise<AdminCreator[]> {
   }
 }
 
-export async function addCreator(
-  token: string,
-  data: { name: string; phone: string; categoryId: number; bio?: string; priceFrom?: number; deliveryDays?: number },
-) {
+export async function addCreator(token: string, data: AddCreatorRequest) {
   try {
     return await post("/admin/creators", data, token);
   } catch (e) {

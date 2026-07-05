@@ -8,12 +8,27 @@ import {
   addCreator,
   verifyCreator,
   AdminCreator,
+  CreatorTier,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Spinner } from "@/app/components/Spinner";
 
 const FLAG_LABEL: Record<string, string> = { top: "Top", exclusive: "Exclusive" };
+
+const TIER_LABEL: Record<CreatorTier, string> = {
+  STANDARD: "Standart",
+  RISING: "O'sib kelayotgan",
+  TOP: "Top",
+  CELEBRITY: "Mashhur",
+};
+
+const TIER_COLOR: Record<CreatorTier, string> = {
+  STANDARD: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  RISING: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  TOP: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  CELEBRITY: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+};
 
 export default function AdminCreatorsPage() {
   const [creators, setCreators] = useState<AdminCreator[]>([]);
@@ -26,6 +41,7 @@ export default function AdminCreatorsPage() {
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newCategoryId, setNewCategoryId] = useState("");
+  const [newTier, setNewTier] = useState<CreatorTier>("STANDARD");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -81,11 +97,13 @@ export default function AdminCreatorsPage() {
         name: newName,
         phone: newPhone,
         categoryId,
+        tier: newTier,
       });
       setShowAdd(false);
       setNewName("");
       setNewPhone("");
       setNewCategoryId("");
+      setNewTier("STANDARD");
       await load();
     } catch (err) {
       if (err instanceof ApiError) setAddError(err.message);
@@ -122,6 +140,7 @@ export default function AdminCreatorsPage() {
               <tr className="border-b border-line text-left text-xs text-muted">
                 <th className="px-4 py-3 font-medium">Ism</th>
                 <th className="px-4 py-3 font-medium">Kategoriya</th>
+                <th className="px-4 py-3 font-medium">Daraja</th>
                 <th className="px-4 py-3 font-medium">Holati</th>
                 <th className="px-4 py-3 font-medium">Flag</th>
                 <th className="px-4 py-3 font-medium">Amallar</th>
@@ -131,7 +150,7 @@ export default function AdminCreatorsPage() {
               {loading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <tr key={i} className="border-b border-line">
-                    {Array.from({ length: 5 }).map((__, j) => (
+                    {Array.from({ length: 6 }).map((__, j) => (
                       <td key={j} className="px-4 py-3">
                         <Skeleton className="h-4 w-20" />
                       </td>
@@ -140,7 +159,7 @@ export default function AdminCreatorsPage() {
                 ))
               ) : creators.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted">
+                  <td colSpan={6} className="px-4 py-8 text-center text-muted">
                     Kreatorlar topilmadi
                   </td>
                 </tr>
@@ -152,6 +171,15 @@ export default function AdminCreatorsPage() {
                   >
                     <td className="px-4 py-3 font-medium text-primary">{creator.name}</td>
                     <td className="px-4 py-3 text-muted">{creator.category}</td>
+                    <td className="px-4 py-3">
+                      {creator.tier ? (
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TIER_COLOR[creator.tier]}`}>
+                          {TIER_LABEL[creator.tier]}
+                        </span>
+                      ) : (
+                        <span className="text-muted text-xs">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -251,6 +279,20 @@ export default function AdminCreatorsPage() {
                 placeholder="1"
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
               />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted">Daraja</label>
+              <select
+                value={newTier}
+                onChange={(e) => setNewTier(e.target.value as CreatorTier)}
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
+              >
+                <option value="STANDARD">Standart</option>
+                <option value="RISING">O&apos;sib kelayotgan</option>
+                <option value="TOP">Top</option>
+                <option value="CELEBRITY">Mashhur</option>
+              </select>
             </div>
 
             <div className="flex gap-2 justify-end pt-1">

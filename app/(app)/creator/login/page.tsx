@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login, sendOtp, resetPassword, saveSession } from "@/lib/admin-api";
+import { login, sendOtp, resetPassword, saveCreatorSession } from "@/lib/creator-api";
 import { ApiError } from "@/lib/api";
 import { Spinner } from "@/app/components/Spinner";
 import { BRAND } from "@/lib/brand";
 
 type Step = "login" | "reset-phone" | "reset-code";
 
-export default function AdminLoginPage() {
+export default function CreatorLoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("login");
   const [phone, setPhone] = useState("");
@@ -27,12 +27,12 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       const session = await login(phone, password);
-      if (session.role !== "SUPERADMIN" && session.role !== "MODERATOR") {
+      if (session.role !== "CREATOR") {
         setError("Kirish huquqingiz yo'q.");
         return;
       }
-      saveSession(session);
-      router.replace("/admin");
+      saveCreatorSession(session);
+      router.replace("/creator");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message || "Xatolik yuz berdi.");
@@ -93,12 +93,12 @@ export default function AdminLoginPage() {
             {BRAND}
             <span className="text-accent">.</span>
           </span>
-          <p className="mt-1 text-sm text-muted">Xodimlar paneli</p>
+          <p className="mt-1 text-sm text-muted">Kreator paneli</p>
         </div>
 
         <div className="surface-card p-6 flex flex-col gap-4">
           <h1 className="text-lg font-semibold text-primary">
-            {step === "login" ? "Kirish" : "Parolni o’rnatish"}
+            {step === "login" ? "Kirish" : "Parolni o'rnatish"}
           </h1>
 
           {resetSuccess && step === "login" && (
@@ -253,7 +253,7 @@ export default function AdminLoginPage() {
                 className="btn-neon mt-1 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {loading && <Spinner size={14} />}
-                {loading ? "Yuklanmoqda..." : "Parolni o’rnatish"}
+                {loading ? "Yuklanmoqda..." : "Parolni o'rnatish"}
               </button>
 
               <button

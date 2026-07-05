@@ -12,8 +12,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
   {
-    // Admin panel uses useEffect-based data fetching (intentional, no SSR/Suspense on this route)
-    files: ["app/(app)/admin/**"],
+    // Admin and creator panels use useEffect-based data fetching (intentional, no SSR/Suspense on these routes)
+    files: ["app/(app)/admin/**", "app/(app)/creator/**"],
     rules: {
       "react-hooks/set-state-in-effect": "off",
     },

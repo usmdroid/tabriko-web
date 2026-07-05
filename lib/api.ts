@@ -81,3 +81,11 @@ export function post<T>(path: string, body: unknown, token?: string) {
 export function patch<T>(path: string, body: unknown, token?: string) {
   return request<T>(path, { method: "PATCH", body: JSON.stringify(body), token });
 }
+
+export function put<T>(path: string, body: unknown, token?: string) {
+  return request<T>(path, { method: "PUT", body: JSON.stringify(body), token });
+}
+
+export function del<T>(path: string, token?: string) {
+  return request<T>(path, { method: "DELETE", token });
+}
