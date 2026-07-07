@@ -35,11 +35,13 @@ export class ApiError extends Error {
 
 async function request<T>(
   path: string,
-  init?: RequestInit & { token?: string },
+  init?: RequestInit & { token?: string; jsonBody?: boolean },
 ): Promise<ApiResponse<T>> {
-  const { token, ...rest } = init ?? {};
+  const { token, jsonBody = true, ...rest } = init ?? {};
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    // Skip Content-Type for FormData bodies (multipart uploads) so the
+    // browser sets the correct multipart boundary itself.
+    ...(jsonBody ? { "Content-Type": "application/json" } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
@@ -90,6 +92,10 @@ export function del<T>(path: string, token?: string) {
   return request<T>(path, { method: "DELETE", token });
 }
 
+export function postForm<T>(path: string, formData: FormData, token?: string) {
+  return request<T>(path, { method: "POST", body: formData, token, jsonBody: false });
+}
+
 // ─── Creator application types ────────────────────────────────────────────────
 
 export type ApplicationStatus =
@@ -111,12 +117,13 @@ export interface Category {
 export interface ApplicationSubmitRequest {
   phone: string;
   code: string;
-  name?: string;
+  name: string;
   activityType: ActivityType;
   categoryId?: number;
   otherText?: string;
   socialType: SocialType;
   igUsername?: string;
+  telegramUsername?: string;
   sampleVideoUrl?: string;
 }
 
@@ -146,6 +153,8 @@ export interface ApplicationDetail {
   categoryName?: string;
   otherText?: string;
   socialType?: SocialType;
+  igUsername?: string;
+  telegramUsername?: string;
   sampleVideoUrl?: string;
   decisionReason?: string;
   igVerifyCode?: string;
@@ -185,6 +194,13 @@ export async function submitApplication(
 ): Promise<ApplicationSubmitResponse> {
   const res = await post<ApplicationSubmitResponse>("/applications", body);
   return res.data;
+}
+
+export async function uploadSampleVideo(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await postForm<{ url: string }>("/applications/upload-sample", formData);
+  return res.data.url;
 }
 
 export async function getApplicationStatus(

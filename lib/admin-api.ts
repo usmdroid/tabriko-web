@@ -442,6 +442,7 @@ export interface AdminApplicationDetail {
   otherText?: string;
   socialType?: AdminSocialType;
   igUsername?: string;
+  telegramUsername?: string;
   sampleVideoUrl?: string;
   status: AdminApplicationStatus;
   decisionReason?: string;

@@ -233,6 +233,7 @@ export default function AdminApplicationDetailPage() {
             <p className="font-medium text-primary">
               {detail.socialType ?? "—"}
               {detail.igUsername && ` · @${detail.igUsername}`}
+              {detail.telegramUsername && ` · @${detail.telegramUsername}`}
             </p>
           </div>
         </div>

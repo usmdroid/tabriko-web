@@ -210,6 +210,11 @@ export default function CreatorApplyStatusPage() {
           <div className="surface-card p-5 mb-4">
             <p className="text-sm font-semibold text-primary mb-2">{t("telegramVerifyTitle")}</p>
             <p className="text-xs text-muted mb-3">{t("telegramVerifyDesc")}</p>
+            {detail.telegramUsername && (
+              <p className="text-xs text-muted mb-3">
+                {t("tgUsernameLabel")}: <span className="text-primary">@{detail.telegramUsername}</span>
+              </p>
+            )}
             {detail.id && (
               <a
                 href={`https://t.me/tabrikoverifybot?start=${detail.id}`}
