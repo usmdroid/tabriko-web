@@ -104,6 +104,7 @@
     "tgStep2": "Open @tabrikoverifybot and press Start",
     "tgStep3": "Share your phone number when the bot asks (same number as this application)",
     "tgStep4": "Add the bot as an admin of your channel/group with MINIMAL rights (no posting/deleting) — the bot reads the subscriber count, confirms, then leaves",
+    "tgVerifyAfterSubmit": "Verifying your Telegram channel/group via the bot happens after you submit — on the application status page.",
     "igUsernameLabel": "Instagram username",
     "igUsernamePlaceholder": "@username",
     "igCopyInstructions": "To verify your Instagram account, copy the text below and send it to @tabriko via Instagram Direct message.",

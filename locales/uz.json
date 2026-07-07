@@ -104,6 +104,7 @@
     "tgStep2": "@tabrikoverifybot botini oching va Start tugmasini bosing",
     "tgStep3": "Bot so'raganda telefon raqamingizni ulashing (shu arizadagi raqam bilan bir xil bo'lsin)",
     "tgStep4": "Tekshirilishini xohlagan kanal/guruhingizga botni ENG KAM HUQUQLI (post/o'chirish huquqisiz) ADMIN qilib qo'shing — bot obunachi sonini o'qib, avtomatik tasdiqlaydi va so'ng chiqib ketadi",
+    "tgVerifyAfterSubmit": "Telegram kanal/guruhingizni bot orqali tasdiqlash ariza topshirilgandan so'ng, ariza holati sahifasida amalga oshiriladi.",
     "igUsernameLabel": "Instagram foydalanuvchi nomi",
     "igUsernamePlaceholder": "@username",
     "igCopyInstructions": "Instagram accountni tasdiqlash uchun quyidagi matnni ko'chirib oling va uni Instagram orqali @tabriko akkauntiga Direct xabar sifatida yuborishingiz kerak bo'ladi.",

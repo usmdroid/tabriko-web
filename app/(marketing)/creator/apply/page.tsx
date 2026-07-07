@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { ChevronRight, CheckCircle, ExternalLink, Upload, X, Copy, Check } from "lucide-react";
+import { ChevronRight, CheckCircle, Upload, X, Copy, Check } from "lucide-react";
 import { Spinner } from "@/app/components/Spinner";
 import {
   sendApplicationOtp,
@@ -20,7 +20,6 @@ import {
 type Phase = "phone" | "verify" | "details";
 
 const STORAGE_KEY = "creator_application";
-const TELEGRAM_BOT_URL = "https://t.me/tabrikoverifybot";
 const MAX_SAMPLE_VIDEO_BYTES = 50 * 1024 * 1024;
 const MAX_SAMPLE_VIDEO_SECONDS = 120;
 const OTP_LENGTH = 4;
@@ -461,7 +460,7 @@ export default function CreatorApplyPage() {
             </div>
           </div>
 
-          {/* Telegram username + bot instructions */}
+          {/* Telegram username (bot verification happens after submit, on the status page) */}
           {socialType === "TELEGRAM" && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
@@ -474,24 +473,7 @@ export default function CreatorApplyPage() {
                   className="rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-primary focus:outline-none focus:border-accent"
                 />
               </div>
-              <div className="rounded-xl bg-card p-4">
-                <p className="text-sm font-semibold text-primary mb-2">{t("tgInstructionsTitle")}</p>
-                <ol className="text-xs text-muted list-decimal list-inside space-y-1 mb-3">
-                  <li>{t("tgStep1", { phone })}</li>
-                  <li>{t("tgStep2")}</li>
-                  <li>{t("tgStep3")}</li>
-                  <li>{t("tgStep4")}</li>
-                </ol>
-                <a
-                  href={TELEGRAM_BOT_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#2AABEE] px-4 py-2 text-sm font-medium text-white hover:bg-[#229ED9] transition-colors"
-                >
-                  {t("telegramOpenBot")}
-                  <ExternalLink size={13} />
-                </a>
-              </div>
+              <p className="text-xs text-muted">{t("tgVerifyAfterSubmit")}</p>
             </div>
           )}
 
