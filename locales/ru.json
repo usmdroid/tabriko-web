@@ -203,6 +203,9 @@
     "channel": "Канал",
     "subscribers": "Подписчики",
     "verifyCode": "Код подтверждения",
+    "expectedTextLabel": "Ожидаемый текст",
+    "usernameToConfirmLabel": "Имя пользователя Instagram",
+    "usernameConfirmHint": "Убедитесь, что Direct-сообщение пришло именно с этого @username — это подтверждает владение аккаунтом",
     "actions": "Действия",
     "fileLabel": "Файл"
   }

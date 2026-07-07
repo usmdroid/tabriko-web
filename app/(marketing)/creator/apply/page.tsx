@@ -8,7 +8,6 @@ import { Spinner } from "@/app/components/Spinner";
 import {
   sendApplicationOtp,
   verifyApplicationPhone,
-  getIgVerifyPhrase,
   getCategories,
   submitApplication,
   uploadSampleVideo,
@@ -51,6 +50,7 @@ export default function CreatorApplyPage() {
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState("");
   const [verifyToken, setVerifyToken] = useState("");
+  const [igVerifyCode, setIgVerifyCode] = useState("");
 
   // Form fields
   const [name, setName] = useState("");
@@ -65,10 +65,8 @@ export default function CreatorApplyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Instagram DM verification phrase (fetched once, shown + copyable before submit)
-  const [igPhrase, setIgPhrase] = useState("");
-  const [igPhraseLoading, setIgPhraseLoading] = useState(false);
-  const [igPhraseCopied, setIgPhraseCopied] = useState(false);
+  // Instagram DM verification text (built client-side, shown + copyable before submit)
+  const [igCopied, setIgCopied] = useState(false);
 
   // Sample video (file upload, not a URL)
   const [sampleVideoFile, setSampleVideoFile] = useState<File | null>(null);
@@ -79,6 +77,10 @@ export default function CreatorApplyPage() {
   const selectedCountry = COUNTRY_CODES.find((c) => c.code === countryCode) ?? COUNTRY_CODES[0];
   const phoneValid = localNumber.length === selectedCountry.digits;
 
+  const activityLabel =
+    activityType === "OTHER" ? otherText.trim() : categories.find((c) => c.id === categoryId)?.name ?? "";
+  const igDisplayText = igVerifyCode ? `${name.trim()} (${activityLabel}) - ${igVerifyCode}` : "";
+
   useEffect(() => {
     if (phase === "details" && categories.length === 0) {
       setLoadingCategories(true);
@@ -88,16 +90,6 @@ export default function CreatorApplyPage() {
         .finally(() => setLoadingCategories(false));
     }
   }, [phase, categories.length]);
-
-  useEffect(() => {
-    if (socialType === "INSTAGRAM" && !igPhrase && !igPhraseLoading) {
-      setIgPhraseLoading(true);
-      getIgVerifyPhrase()
-        .then(setIgPhrase)
-        .catch(() => {})
-        .finally(() => setIgPhraseLoading(false));
-    }
-  }, [socialType, igPhrase, igPhraseLoading]);
 
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
@@ -123,8 +115,9 @@ export default function CreatorApplyPage() {
     setVerifying(true);
     setVerifyError("");
     try {
-      const token = await verifyApplicationPhone(phone, verifyCode);
+      const { verifyToken: token, igVerifyCode: code } = await verifyApplicationPhone(phone, verifyCode);
       setVerifyToken(token);
+      setIgVerifyCode(code);
       setPhase("details");
     } catch (err) {
       if (err instanceof ApiError) setVerifyError(err.message);
@@ -145,11 +138,11 @@ export default function CreatorApplyPage() {
     }
   }
 
-  async function handleCopyIgPhrase() {
+  async function handleCopyIgText() {
     try {
-      await navigator.clipboard.writeText(igPhrase);
-      setIgPhraseCopied(true);
-      setTimeout(() => setIgPhraseCopied(false), 2000);
+      await navigator.clipboard.writeText(igDisplayText);
+      setIgCopied(true);
+      setTimeout(() => setIgCopied(false), 2000);
     } catch {
       // clipboard API unavailable — ignore, the text is still selectable
     }
@@ -220,7 +213,6 @@ export default function CreatorApplyPage() {
         otherText: activityType === "OTHER" ? otherText.trim() || undefined : undefined,
         socialType,
         igUsername: socialType === "INSTAGRAM" ? igUsername.trim().replace(/^@/, "") || undefined : undefined,
-        igVerifyCode: socialType === "INSTAGRAM" ? igPhrase || undefined : undefined,
         telegramUsername: socialType === "TELEGRAM" ? telegramUsername.trim().replace(/^@/, "") || undefined : undefined,
         sampleVideoUrl: sampleVideoUrl || undefined,
       });
@@ -519,24 +511,17 @@ export default function CreatorApplyPage() {
               </div>
               <div className="rounded-xl bg-card p-4">
                 <p className="text-xs text-muted mb-3">{t("igCopyInstructions")}</p>
-                {igPhraseLoading ? (
-                  <div className="flex items-center gap-2 py-2">
-                    <Spinner size={13} className="text-accent" />
-                    <span className="text-xs text-muted">{t("loading")}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-surface px-3 py-2.5">
-                    <span className="text-sm text-primary select-all">{igPhrase}</span>
-                    <button
-                      type="button"
-                      onClick={handleCopyIgPhrase}
-                      className="shrink-0 flex items-center gap-1 rounded-md border border-line px-2 py-1 text-xs text-muted hover:text-primary hover:border-accent/50 transition-colors"
-                    >
-                      {igPhraseCopied ? <Check size={12} /> : <Copy size={12} />}
-                      {igPhraseCopied ? t("copied") : t("copyBtn")}
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-surface px-3 py-2.5">
+                  <span className="text-sm text-primary select-all">{igDisplayText}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyIgText}
+                    className="shrink-0 flex items-center gap-1 rounded-md border border-line px-2 py-1 text-xs text-muted hover:text-primary hover:border-accent/50 transition-colors"
+                  >
+                    {igCopied ? <Check size={12} /> : <Copy size={12} />}
+                    {igCopied ? t("copied") : t("copyBtn")}
+                  </button>
+                </div>
               </div>
             </div>
           )}

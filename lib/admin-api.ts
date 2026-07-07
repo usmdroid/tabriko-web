@@ -56,6 +56,31 @@ export interface AdminCategoryRequest {
   iconUrl?: string;
 }
 
+export interface AdminOccasion {
+  id: number;
+  title: string;
+  eventDate: string;
+  recurringYearly: boolean;
+  emoji?: string;
+  color?: string;
+  imageUrl?: string;
+  categoryId?: number;
+  active: boolean;
+  sortOrder: number;
+}
+
+export interface AdminOccasionRequest {
+  title: string;
+  eventDate: string;
+  recurringYearly: boolean;
+  emoji?: string;
+  color?: string;
+  imageUrl?: string;
+  categoryId?: number;
+  active: boolean;
+  sortOrder: number;
+}
+
 export interface AdminOrder {
   id: string;
   userId: string;
@@ -593,6 +618,43 @@ export async function archiveCategory(token: string, id: number): Promise<void> 
 export async function restoreCategory(token: string, id: number): Promise<void> {
   try {
     await post(`/admin/categories/${id}/restore`, {}, token);
+  } catch (e) {
+    rethrow401(e);
+  }
+}
+
+// ─── Occasions ─────────────────────────────────────────────────────────────────
+
+export async function fetchOccasions(token: string): Promise<AdminOccasion[]> {
+  try {
+    const res = await get<AdminOccasion[]>("/admin/occasions", token);
+    return res.data ?? [];
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function createOccasion(token: string, data: AdminOccasionRequest): Promise<AdminOccasion> {
+  try {
+    const res = await post<AdminOccasion>("/admin/occasions", data, token);
+    return res.data;
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function updateOccasion(token: string, id: number, data: AdminOccasionRequest): Promise<AdminOccasion> {
+  try {
+    const res = await put<AdminOccasion>(`/admin/occasions/${id}`, data, token);
+    return res.data;
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function deleteOccasion(token: string, id: number): Promise<void> {
+  try {
+    await del(`/admin/occasions/${id}`, token);
   } catch (e) {
     rethrow401(e);
   }

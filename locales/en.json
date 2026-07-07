@@ -203,6 +203,9 @@
     "channel": "Channel",
     "subscribers": "Subscribers",
     "verifyCode": "Verify code",
+    "expectedTextLabel": "Expected text",
+    "usernameToConfirmLabel": "Instagram username",
+    "usernameConfirmHint": "Confirm the Direct message came from this exact @username — this proves account ownership",
     "actions": "Actions",
     "fileLabel": "File"
   }

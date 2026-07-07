@@ -123,7 +123,6 @@ export interface ApplicationSubmitRequest {
   otherText?: string;
   socialType: SocialType;
   igUsername?: string;
-  igVerifyCode?: string;
   telegramUsername?: string;
   sampleVideoUrl?: string;
 }
@@ -185,20 +184,21 @@ export async function sendApplicationOtp(phone: string): Promise<void> {
   await post("/auth/send-otp", { phone });
 }
 
-// Verifies the OTP immediately and exchanges it for a longer-lived verifyToken,
-// so the applicant can take their time filling out the rest of the form without
-// racing the OTP's short TTL.
-export async function verifyApplicationPhone(phone: string, code: string): Promise<string> {
-  const res = await post<{ phone: string; verifyToken: string }>("/applications/verify-phone", {
-    phone,
-    code,
-  });
-  return res.data.verifyToken;
+export interface VerifyPhoneResult {
+  verifyToken: string;
+  igVerifyCode: string;
 }
 
-export async function getIgVerifyPhrase(): Promise<string> {
-  const res = await get<{ phrase: string }>("/applications/ig-verify-phrase");
-  return res.data.phrase;
+// Verifies the OTP immediately and exchanges it for a longer-lived verifyToken,
+// so the applicant can take their time filling out the rest of the form without
+// racing the OTP's short TTL. Also returns igVerifyCode so the Instagram DM text
+// can be built client-side without a separate request.
+export async function verifyApplicationPhone(phone: string, code: string): Promise<VerifyPhoneResult> {
+  const res = await post<{ phone: string; verifyToken: string; igVerifyCode: string }>(
+    "/applications/verify-phone",
+    { phone, code },
+  );
+  return { verifyToken: res.data.verifyToken, igVerifyCode: res.data.igVerifyCode };
 }
 
 export async function getCategories(): Promise<Category[]> {

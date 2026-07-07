@@ -203,6 +203,9 @@
     "channel": "Kanal",
     "subscribers": "Obunachi",
     "verifyCode": "Verify code",
+    "expectedTextLabel": "Kutilayotgan matn",
+    "usernameToConfirmLabel": "Instagram foydalanuvchi nomi",
+    "usernameConfirmHint": "Direct xabar aynan shu @username dan kelganligini tekshiring — bu akkount egaligini tasdiqlaydi",
     "actions": "Amallar",
     "fileLabel": "Fayl"
   }

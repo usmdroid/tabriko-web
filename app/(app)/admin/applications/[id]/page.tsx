@@ -303,10 +303,17 @@ export default function AdminApplicationDetailPage() {
             <div className="text-sm space-y-2">
               {detail.igVerifyCode && (
                 <div>
-                  <p className="text-xs text-muted mb-1">{t("verifyCode")}</p>
+                  <p className="text-xs text-muted mb-1">{t("expectedTextLabel")}</p>
                   <code className="block rounded bg-card px-2 py-1 text-xs font-mono text-primary">
-                    {detail.igVerifyCode}
+                    {`${detail.name ?? ""} (${detail.categoryName ?? detail.otherText ?? ""}) - ${detail.igVerifyCode}`}
                   </code>
+                </div>
+              )}
+              {detail.igUsername && (
+                <div>
+                  <p className="text-xs text-muted mb-1">{t("usernameToConfirmLabel")}</p>
+                  <p className="font-medium text-primary">@{detail.igUsername}</p>
+                  <p className="text-xs text-muted mt-0.5">{t("usernameConfirmHint")}</p>
                 </div>
               )}
               <div className="flex items-center gap-3">
