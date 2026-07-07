@@ -10,7 +10,7 @@ import {
   AdminCreator,
   CreatorTier,
 } from "@/lib/admin-api";
-import { ApiError } from "@/lib/api";
+import { ApiError, getCategories, Category } from "@/lib/api";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Spinner } from "@/app/components/Spinner";
 
@@ -37,11 +37,16 @@ export default function AdminCreatorsPage() {
   const [error, setError] = useState("");
   const [showAdd, setShowAdd] = useState(false);
 
+  // Categories list for dropdown
+  const [categories, setCategories] = useState<Category[]>([]);
+
   // Add creator form state
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
-  const [newCategoryId, setNewCategoryId] = useState("");
+  const [newCategoryId, setNewCategoryId] = useState<number | "">("");
   const [newTier, setNewTier] = useState<CreatorTier>("STANDARD");
+  const [newPassportSeries, setNewPassportSeries] = useState("");
+  const [newPassportNumber, setNewPassportNumber] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -67,6 +72,10 @@ export default function AdminCreatorsPage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    getCategories().then(setCategories).catch(() => {});
+  }, []);
+
   async function handleVerify(creator: AdminCreator) {
     if (!session) return;
     setBusy((b) => ({ ...b, [creator.id]: true }));
@@ -85,10 +94,21 @@ export default function AdminCreatorsPage() {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!session) return;
-    const categoryId = parseInt(newCategoryId, 10);
-    if (isNaN(categoryId) || categoryId <= 0) {
-      setAddError("Kategoriya ID raqam bo'lishi kerak.");
+    if (!newCategoryId) {
+      setAddError("Kategoriya tanlanishi shart.");
       return;
+    }
+    const series = newPassportSeries.trim();
+    const number = newPassportNumber.trim();
+    if (series || number) {
+      if (!/^[A-Z]{2}$/.test(series)) {
+        setAddError("Pasport seriyasi 2 ta KATTA harf bo'lishi kerak (masalan: AA).");
+        return;
+      }
+      if (!/^[0-9]{7}$/.test(number)) {
+        setAddError("Pasport raqami aynan 7 ta raqam bo'lishi kerak.");
+        return;
+      }
     }
     setAdding(true);
     setAddError("");
@@ -96,14 +116,17 @@ export default function AdminCreatorsPage() {
       await addCreator(session.token, {
         name: newName,
         phone: newPhone,
-        categoryId,
+        categoryId: newCategoryId,
         tier: newTier,
+        ...(series && number ? { passportSeries: series, passportNumber: number } : {}),
       });
       setShowAdd(false);
       setNewName("");
       setNewPhone("");
       setNewCategoryId("");
       setNewTier("STANDARD");
+      setNewPassportSeries("");
+      setNewPassportNumber("");
       await load();
     } catch (err) {
       if (err instanceof ApiError) setAddError(err.message);
@@ -269,16 +292,43 @@ export default function AdminCreatorsPage() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Kategoriya ID</label>
-              <input
-                type="number"
+              <label className="text-xs font-medium text-muted">Kategoriya</label>
+              <select
                 required
-                min={1}
                 value={newCategoryId}
-                onChange={(e) => setNewCategoryId(e.target.value)}
-                placeholder="1"
+                onChange={(e) => setNewCategoryId(e.target.value ? Number(e.target.value) : "")}
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
-              />
+              >
+                <option value="">— Tanlang —</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-xs font-medium text-muted">Pasport seriyasi</label>
+                <input
+                  type="text"
+                  maxLength={2}
+                  value={newPassportSeries}
+                  onChange={(e) => setNewPassportSeries(e.target.value.toUpperCase())}
+                  placeholder="AA"
+                  className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
+                />
+              </div>
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-xs font-medium text-muted">Pasport raqami</label>
+                <input
+                  type="text"
+                  maxLength={7}
+                  value={newPassportNumber}
+                  onChange={(e) => setNewPassportNumber(e.target.value.replace(/\D/g, ""))}
+                  placeholder="1234567"
+                  className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
+                />
+              </div>
             </div>
 
             <div className="flex flex-col gap-1">

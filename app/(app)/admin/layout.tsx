@@ -13,7 +13,10 @@ import {
   LogOut,
   Menu,
   X,
+  FileText,
+  Tag,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { getSession, clearSession, StaffSession } from "@/lib/admin-api";
 import { Spinner } from "@/app/components/Spinner";
 import { BRAND } from "@/lib/brand";
@@ -23,6 +26,8 @@ import { BRAND } from "@/lib/brand";
 const NAV = [
   { href: "/admin", label: "Foydalanuvchilar", icon: Users, exact: true, superAdminOnly: false },
   { href: "/admin/creators", label: "Kreatorlar", icon: Star, exact: false, superAdminOnly: false },
+  { href: "/admin/categories", label: "Kategoriyalar", icon: Tag, exact: false, superAdminOnly: false },
+  { href: "/admin/applications", label: "Arizalar", icon: FileText, exact: false, superAdminOnly: false },
   { href: "/admin/orders", label: "Buyurtmalar", icon: ShoppingBag, exact: false, superAdminOnly: false },
   { href: "/admin/moderation", label: "Moderatsiya", icon: Shield, exact: false, superAdminOnly: false },
   { href: "/admin/stats", label: "Statistika", icon: BarChart2, exact: false, superAdminOnly: false },
@@ -40,6 +45,7 @@ function SidebarContent({
   pathname: string;
   onLogout: () => void;
 }) {
+  const t = useTranslations("adminApplications");
   const filtered = NAV.filter(
     (item) => !item.superAdminOnly || session.role === "SUPERADMIN",
   );
@@ -72,7 +78,7 @@ function SidebarContent({
               }`}
             >
               <item.icon size={16} />
-              {item.label}
+              {item.href === "/admin/applications" ? t("pageTitle") : item.label}
             </Link>
           );
         })}

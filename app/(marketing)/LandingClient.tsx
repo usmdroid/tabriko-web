@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { ChevronDown, Star, Zap, DollarSign, Heart } from "lucide-react";
 import Reveal from "@/app/components/Reveal";
 import CountUp from "@/app/components/CountUp";
@@ -297,6 +298,28 @@ export default function LandingClient() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* ── Creator CTA ──────────────────────────────────────────────── */}
+      <section className="border-t border-line gradient-bg py-20">
+        <div className="mx-auto max-w-4xl px-6">
+          <Reveal>
+            <div className="rounded-3xl border border-accent/20 bg-surface/60 p-10 text-center shadow-[0_4px_24px_rgba(124,58,237,0.08)]">
+              <span className="inline-block rounded-full border border-accent/30 bg-accent/10 px-4 py-1 text-xs font-medium uppercase tracking-wider text-accent">
+                {t("creatorCtaHeading")}
+              </span>
+              <p className="mt-4 max-w-xl mx-auto text-base leading-relaxed text-muted">
+                {t("creatorCtaDesc")}
+              </p>
+              <Link
+                href="/creator/apply"
+                className="mt-6 inline-flex items-center gap-2 btn-neon rounded-full px-7 py-3 font-semibold text-white text-sm"
+              >
+                {t("creatorCtaButton")}
+              </Link>
+            </div>
+          </Reveal>
         </div>
       </section>
 

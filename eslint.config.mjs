@@ -13,7 +13,7 @@ const eslintConfig = defineConfig([
   ]),
   {
     // Admin and creator panels use useEffect-based data fetching (intentional, no SSR/Suspense on these routes)
-    files: ["app/(app)/admin/**", "app/(app)/creator/**"],
+    files: ["app/(app)/admin/**", "app/(app)/creator/**", "app/(marketing)/creator/**"],
     rules: {
       "react-hooks/set-state-in-effect": "off",
     },

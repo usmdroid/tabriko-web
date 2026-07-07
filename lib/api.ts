@@ -89,3 +89,122 @@ export function put<T>(path: string, body: unknown, token?: string) {
 export function del<T>(path: string, token?: string) {
   return request<T>(path, { method: "DELETE", token });
 }
+
+// ─── Creator application types ────────────────────────────────────────────────
+
+export type ApplicationStatus =
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "INFO_REQUESTED"
+  | "APPROVED"
+  | "REJECTED";
+
+export type ActivityType = "CATEGORY" | "OTHER";
+export type SocialType = "TELEGRAM" | "INSTAGRAM";
+
+export interface Category {
+  id: number;
+  name: string;
+  iconUrl?: string;
+}
+
+export interface ApplicationSubmitRequest {
+  phone: string;
+  code: string;
+  name?: string;
+  activityType: ActivityType;
+  categoryId?: number;
+  otherText?: string;
+  socialType: SocialType;
+  igUsername?: string;
+  sampleVideoUrl?: string;
+}
+
+export interface ApplicationSubmitResponse {
+  applicationId: string;
+  trackingToken: string;
+  status: ApplicationStatus;
+  igVerifyCode?: string;
+  igInstructions?: string;
+}
+
+export interface ApplicationMessage {
+  id: string;
+  author: "APPLICANT" | "MODERATOR";
+  text: string;
+  fileUrl?: string;
+  createdAt: string;
+}
+
+export interface ApplicationDetail {
+  id: string;
+  trackingToken?: string;
+  status: ApplicationStatus;
+  name?: string;
+  phone?: string;
+  activityType?: ActivityType;
+  categoryName?: string;
+  otherText?: string;
+  socialType?: SocialType;
+  sampleVideoUrl?: string;
+  decisionReason?: string;
+  igVerifyCode?: string;
+  igInstructions?: string;
+  messages: ApplicationMessage[];
+  verification?: {
+    telegram?: {
+      verified?: boolean;
+      channelName?: string | null;
+      channelUsername?: string | null;
+      subscribers?: number | null;
+      ownerStatus?: string | null;
+      chatType?: string | null;
+    } | null;
+    instagram?: {
+      username?: string;
+      verifyCode?: string | null;
+      ownershipConfirmed?: boolean;
+    } | null;
+  };
+  createdAt?: string;
+}
+
+// ─── Creator application endpoints ───────────────────────────────────────────
+
+export async function sendApplicationOtp(phone: string): Promise<void> {
+  await post("/auth/send-otp", { phone });
+}
+
+export async function getCategories(): Promise<Category[]> {
+  const res = await get<Category[]>("/categories");
+  return res.data ?? [];
+}
+
+export async function submitApplication(
+  body: ApplicationSubmitRequest,
+): Promise<ApplicationSubmitResponse> {
+  const res = await post<ApplicationSubmitResponse>("/applications", body);
+  return res.data;
+}
+
+export async function getApplicationStatus(
+  id: string,
+  trackingToken: string,
+): Promise<ApplicationDetail> {
+  const res = await get<ApplicationDetail>(
+    `/applications/${id}?token=${encodeURIComponent(trackingToken)}`,
+  );
+  return res.data;
+}
+
+export async function replyToApplication(
+  id: string,
+  trackingToken: string,
+  text: string,
+  fileUrl?: string,
+): Promise<void> {
+  await post(
+    `/applications/${id}/reply?token=${encodeURIComponent(trackingToken)}`,
+    fileUrl ? { text, fileUrl } : { text },
+  );
+}

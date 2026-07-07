@@ -1,4 +1,4 @@
-import { get, post, patch, ApiError } from "./api";
+import { get, post, patch, put, del, ApiError } from "./api";
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -36,6 +36,24 @@ export interface AddCreatorRequest {
   bio?: string;
   priceFrom?: number;
   deliveryDays?: number;
+  passportSeries?: string;
+  passportNumber?: string;
+}
+
+export interface AdminCategory {
+  id: number;
+  nameUz: string;
+  nameRu: string;
+  nameEn: string;
+  iconUrl?: string;
+  archived: boolean;
+}
+
+export interface AdminCategoryRequest {
+  nameUz: string;
+  nameRu: string;
+  nameEn: string;
+  iconUrl?: string;
 }
 
 export interface AdminOrder {
@@ -381,5 +399,200 @@ export async function updateSettings(token: string, data: Partial<PlatformSettin
     return await patch("/admin/settings", data, token);
   } catch (e) {
     return rethrow401(e);
+  }
+}
+
+// ─── Admin Applications ────────────────────────────────────────────────────────
+
+export type AdminApplicationStatus =
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "INFO_REQUESTED"
+  | "APPROVED"
+  | "REJECTED";
+
+export type AdminSocialType = "TELEGRAM" | "INSTAGRAM";
+
+export interface AdminApplicationListItem {
+  id: string;
+  name?: string;
+  phone: string;
+  activityType?: string;
+  categoryName?: string;
+  otherText?: string;
+  socialType?: AdminSocialType;
+  status: AdminApplicationStatus;
+  createdAt: string;
+}
+
+export interface AdminApplicationMessage {
+  id: string;
+  author: "APPLICANT" | "MODERATOR";
+  text: string;
+  fileUrl?: string;
+  createdAt: string;
+}
+
+export interface AdminApplicationDetail {
+  id: string;
+  name?: string;
+  phone: string;
+  activityType?: string;
+  categoryName?: string;
+  otherText?: string;
+  socialType?: AdminSocialType;
+  igUsername?: string;
+  sampleVideoUrl?: string;
+  status: AdminApplicationStatus;
+  decisionReason?: string;
+  igVerifyCode?: string;
+  messages: AdminApplicationMessage[];
+  verification?: {
+    telegram?: {
+      verified?: boolean;
+      channelName?: string | null;
+      channelUsername?: string | null;
+      subscribers?: number | null;
+      ownerStatus?: string | null;
+      chatType?: string | null;
+    } | null;
+    instagram?: {
+      username?: string;
+      verifyCode?: string | null;
+      ownershipConfirmed?: boolean;
+    } | null;
+  };
+  createdAt?: string;
+}
+
+export async function fetchApplications(
+  token: string,
+  status?: string,
+): Promise<AdminApplicationListItem[]> {
+  try {
+    const q = status ? `?status=${encodeURIComponent(status)}` : "";
+    const res = await get<
+      { content: AdminApplicationListItem[] } | AdminApplicationListItem[]
+    >(`/admin/applications${q}`, token);
+    const data = res.data;
+    if (Array.isArray(data)) return data;
+    if (data && !Array.isArray(data) && "content" in data) return data.content ?? [];
+    return [];
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function fetchApplication(
+  token: string,
+  id: string,
+): Promise<AdminApplicationDetail> {
+  try {
+    const res = await get<AdminApplicationDetail>(`/admin/applications/${id}`, token);
+    return res.data;
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function reviewApplication(token: string, id: string) {
+  try {
+    return await post(`/admin/applications/${id}/review`, {}, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function requestApplicationInfo(token: string, id: string, message: string) {
+  try {
+    return await post(`/admin/applications/${id}/request-info`, { message }, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function rejectApplication(token: string, id: string, reason: string) {
+  try {
+    return await post(`/admin/applications/${id}/reject`, { message: reason }, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function confirmInstagram(token: string, id: string) {
+  try {
+    return await post(`/admin/applications/${id}/confirm-instagram`, {}, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function messageApplication(
+  token: string,
+  id: string,
+  text: string,
+  fileUrl?: string,
+) {
+  try {
+    return await post(
+      `/admin/applications/${id}/message`,
+      fileUrl ? { text, fileUrl } : { text },
+      token,
+    );
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function approveApplication(token: string, id: string) {
+  try {
+    return await post(`/admin/applications/${id}/approve`, {}, token);
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+// ─── Categories ───────────────────────────────────────────────────────────────
+
+export async function getAdminCategories(token: string): Promise<AdminCategory[]> {
+  try {
+    const res = await get<AdminCategory[]>("/admin/categories", token);
+    return res.data ?? [];
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function createCategory(token: string, data: AdminCategoryRequest): Promise<AdminCategory> {
+  try {
+    const res = await post<AdminCategory>("/admin/categories", data, token);
+    return res.data;
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function updateCategory(token: string, id: number, data: AdminCategoryRequest): Promise<AdminCategory> {
+  try {
+    const res = await put<AdminCategory>(`/admin/categories/${id}`, data, token);
+    return res.data;
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function archiveCategory(token: string, id: number): Promise<void> {
+  try {
+    await del(`/admin/categories/${id}`, token);
+  } catch (e) {
+    rethrow401(e);
+  }
+}
+
+export async function restoreCategory(token: string, id: number): Promise<void> {
+  try {
+    await post(`/admin/categories/${id}/restore`, {}, token);
+  } catch (e) {
+    rethrow401(e);
   }
 }
