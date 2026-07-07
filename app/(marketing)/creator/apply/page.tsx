@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { ChevronRight, CheckCircle, ExternalLink, Upload, X } from "lucide-react";
+import { ChevronRight, CheckCircle, ExternalLink, Upload, X, Copy, Check } from "lucide-react";
 import { Spinner } from "@/app/components/Spinner";
 import {
   sendApplicationOtp,
+  verifyApplicationPhone,
+  getIgVerifyPhrase,
   getCategories,
   submitApplication,
   uploadSampleVideo,
@@ -16,12 +18,13 @@ import {
   ApiError,
 } from "@/lib/api";
 
-type Phase = "phone" | "form";
+type Phase = "phone" | "verify" | "details";
 
 const STORAGE_KEY = "creator_application";
 const TELEGRAM_BOT_URL = "https://t.me/tabrikoverifybot";
 const MAX_SAMPLE_VIDEO_BYTES = 50 * 1024 * 1024;
 const MAX_SAMPLE_VIDEO_SECONDS = 120;
+const OTP_LENGTH = 4;
 
 // Central Asian country codes — dropdown + per-country digit count for masking/validation.
 const COUNTRY_CODES = [
@@ -43,8 +46,13 @@ export default function CreatorApplyPage() {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [otpError, setOtpError] = useState("");
 
+  // Phone verification (OTP is confirmed right away, before the rest of the form)
+  const [verifyCode, setVerifyCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState("");
+  const [verifyToken, setVerifyToken] = useState("");
+
   // Form fields
-  const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [activityType, setActivityType] = useState<ActivityType | "">("");
   const [categoryId, setCategoryId] = useState<number | "">("");
@@ -57,6 +65,11 @@ export default function CreatorApplyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  // Instagram DM verification phrase (fetched once, shown + copyable before submit)
+  const [igPhrase, setIgPhrase] = useState("");
+  const [igPhraseLoading, setIgPhraseLoading] = useState(false);
+  const [igPhraseCopied, setIgPhraseCopied] = useState(false);
+
   // Sample video (file upload, not a URL)
   const [sampleVideoFile, setSampleVideoFile] = useState<File | null>(null);
   const [sampleVideoUrl, setSampleVideoUrl] = useState("");
@@ -67,7 +80,7 @@ export default function CreatorApplyPage() {
   const phoneValid = localNumber.length === selectedCountry.digits;
 
   useEffect(() => {
-    if (phase === "form" && categories.length === 0) {
+    if (phase === "details" && categories.length === 0) {
       setLoadingCategories(true);
       getCategories()
         .then(setCategories)
@@ -75,6 +88,16 @@ export default function CreatorApplyPage() {
         .finally(() => setLoadingCategories(false));
     }
   }, [phase, categories.length]);
+
+  useEffect(() => {
+    if (socialType === "INSTAGRAM" && !igPhrase && !igPhraseLoading) {
+      setIgPhraseLoading(true);
+      getIgVerifyPhrase()
+        .then(setIgPhrase)
+        .catch(() => {})
+        .finally(() => setIgPhraseLoading(false));
+    }
+  }, [socialType, igPhrase, igPhraseLoading]);
 
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
@@ -85,12 +108,50 @@ export default function CreatorApplyPage() {
     try {
       await sendApplicationOtp(fullPhone);
       setPhone(fullPhone);
-      setPhase("form");
+      setPhase("verify");
     } catch (err) {
       if (err instanceof ApiError) setOtpError(err.message);
       else setOtpError(t("loadError"));
     } finally {
       setSendingOtp(false);
+    }
+  }
+
+  async function handleVerifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (verifyCode.length !== OTP_LENGTH) return;
+    setVerifying(true);
+    setVerifyError("");
+    try {
+      const token = await verifyApplicationPhone(phone, verifyCode);
+      setVerifyToken(token);
+      setPhase("details");
+    } catch (err) {
+      if (err instanceof ApiError) setVerifyError(err.message);
+      else setVerifyError(t("loadError"));
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function handleResendCode() {
+    setVerifyError("");
+    setVerifyCode("");
+    try {
+      await sendApplicationOtp(phone);
+    } catch (err) {
+      if (err instanceof ApiError) setVerifyError(err.message);
+      else setVerifyError(t("loadError"));
+    }
+  }
+
+  async function handleCopyIgPhrase() {
+    try {
+      await navigator.clipboard.writeText(igPhrase);
+      setIgPhraseCopied(true);
+      setTimeout(() => setIgPhraseCopied(false), 2000);
+    } catch {
+      // clipboard API unavailable — ignore, the text is still selectable
     }
   }
 
@@ -152,13 +213,14 @@ export default function CreatorApplyPage() {
     try {
       const res = await submitApplication({
         phone: phone.trim(),
-        code: code.trim(),
+        verifyToken,
         name: name.trim(),
         activityType,
         categoryId: activityType === "CATEGORY" && categoryId !== "" ? Number(categoryId) : undefined,
         otherText: activityType === "OTHER" ? otherText.trim() || undefined : undefined,
         socialType,
         igUsername: socialType === "INSTAGRAM" ? igUsername.trim().replace(/^@/, "") || undefined : undefined,
+        igVerifyCode: socialType === "INSTAGRAM" ? igPhrase || undefined : undefined,
         telegramUsername: socialType === "TELEGRAM" ? telegramUsername.trim().replace(/^@/, "") || undefined : undefined,
         sampleVideoUrl: sampleVideoUrl || undefined,
       });
@@ -168,8 +230,17 @@ export default function CreatorApplyPage() {
       );
       router.push("/creator/apply/status");
     } catch (err) {
-      if (err instanceof ApiError) setSubmitError(err.message);
-      else setSubmitError(t("loadError"));
+      if (err instanceof ApiError) {
+        setSubmitError(err.message);
+        // The verifyToken expired or was already used — bounce back to re-verify.
+        if (err.httpStatus === 400 && /verif/i.test(err.message)) {
+          setPhase("verify");
+          setVerifyToken("");
+          setVerifyCode("");
+        }
+      } else {
+        setSubmitError(t("loadError"));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -239,6 +310,65 @@ export default function CreatorApplyPage() {
     );
   }
 
+  if (phase === "verify") {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-4 py-16">
+        <div className="w-full max-w-md">
+          <button
+            onClick={() => setPhase("phone")}
+            className="text-sm text-muted hover:text-primary transition-colors mb-6"
+          >
+            {t("backToPhone")}
+          </button>
+
+          <h1 className="font-serif text-2xl font-bold text-primary mb-1">{t("pageTitle")}</h1>
+          <p className="text-sm text-muted mb-8">{t("verifyStepDesc", { phone })}</p>
+
+          <form onSubmit={handleVerifyCode} className="surface-card p-6 flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted">{t("otpLabel")}</label>
+              <input
+                type="text"
+                required
+                inputMode="numeric"
+                maxLength={OTP_LENGTH}
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))}
+                placeholder={t("otpPlaceholder")}
+                className="rounded-lg border border-line bg-surface px-3 py-2.5 text-lg tracking-[0.5em] text-primary focus:outline-none focus:border-accent"
+                autoFocus
+              />
+              <p className="text-xs text-muted">{t("otpHint")}</p>
+            </div>
+
+            {verifyError && (
+              <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
+                {verifyError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={verifying || verifyCode.length !== OTP_LENGTH}
+              className="flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-hover transition-colors disabled:opacity-60"
+            >
+              {verifying ? <Spinner size={14} /> : <CheckCircle size={14} />}
+              {t("verifyBtn")}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleResendCode}
+              className="text-xs text-muted hover:text-primary transition-colors"
+            >
+              {t("resendCode")}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[60vh] px-4 py-16">
       <div className="mx-auto max-w-lg">
@@ -253,22 +383,6 @@ export default function CreatorApplyPage() {
         <p className="text-sm text-muted mb-8">{t("step2Heading")}</p>
 
         <form onSubmit={handleSubmit} className="surface-card p-6 flex flex-col gap-5">
-          {/* OTP code */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted">{t("otpLabel")}</label>
-            <input
-              type="text"
-              required
-              inputMode="numeric"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              placeholder={t("otpPlaceholder")}
-              className="rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-primary focus:outline-none focus:border-accent"
-            />
-            <p className="text-xs text-muted">{t("otpHint")}</p>
-          </div>
-
           {/* Name */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted">{t("nameLabel")}</label>
@@ -371,9 +485,10 @@ export default function CreatorApplyPage() {
               <div className="rounded-xl bg-card p-4">
                 <p className="text-sm font-semibold text-primary mb-2">{t("tgInstructionsTitle")}</p>
                 <ol className="text-xs text-muted list-decimal list-inside space-y-1 mb-3">
-                  <li>{t("tgStep1")}</li>
+                  <li>{t("tgStep1", { phone })}</li>
                   <li>{t("tgStep2")}</li>
                   <li>{t("tgStep3")}</li>
+                  <li>{t("tgStep4")}</li>
                 </ol>
                 <a
                   href={TELEGRAM_BOT_URL}
@@ -403,7 +518,25 @@ export default function CreatorApplyPage() {
                 />
               </div>
               <div className="rounded-xl bg-card p-4">
-                <p className="text-xs text-muted">{t("igInstructionsPreview")}</p>
+                <p className="text-xs text-muted mb-3">{t("igCopyInstructions")}</p>
+                {igPhraseLoading ? (
+                  <div className="flex items-center gap-2 py-2">
+                    <Spinner size={13} className="text-accent" />
+                    <span className="text-xs text-muted">{t("loading")}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-surface px-3 py-2.5">
+                    <span className="text-sm text-primary select-all">{igPhrase}</span>
+                    <button
+                      type="button"
+                      onClick={handleCopyIgPhrase}
+                      className="shrink-0 flex items-center gap-1 rounded-md border border-line px-2 py-1 text-xs text-muted hover:text-primary hover:border-accent/50 transition-colors"
+                    >
+                      {igPhraseCopied ? <Check size={12} /> : <Copy size={12} />}
+                      {igPhraseCopied ? t("copied") : t("copyBtn")}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -461,7 +594,6 @@ export default function CreatorApplyPage() {
             disabled={
               submitting ||
               sampleVideoUploading ||
-              !code.trim() ||
               !name.trim() ||
               !activityType ||
               !socialType
