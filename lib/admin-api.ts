@@ -578,6 +578,14 @@ export async function approveApplication(token: string, id: string) {
   }
 }
 
+export async function deleteApplication(token: string, id: string): Promise<void> {
+  try {
+    await del(`/admin/applications/${id}`, token);
+  } catch (e) {
+    rethrow401(e);
+  }
+}
+
 // ─── Categories ───────────────────────────────────────────────────────────────
 
 export async function getAdminCategories(token: string): Promise<AdminCategory[]> {

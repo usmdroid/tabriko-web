@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { X, ExternalLink } from "lucide-react";
+import { X, ExternalLink, Trash2 } from "lucide-react";
 import {
   getSession,
   fetchApplication,
@@ -14,6 +14,7 @@ import {
   confirmInstagram,
   messageApplication,
   approveApplication,
+  deleteApplication,
   AdminApplicationDetail,
   AdminApplicationStatus,
 } from "@/lib/admin-api";
@@ -133,6 +134,7 @@ function ActionModal({ type, onClose, onSubmit }: ActionModalProps) {
 export default function AdminApplicationDetailPage() {
   const t = useTranslations("adminApplications");
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const session = useMemo(() => getSession(), []);
 
   const [detail, setDetail] = useState<AdminApplicationDetail | null>(null);
@@ -170,6 +172,21 @@ export default function AdminApplicationDetailPage() {
       if (e instanceof ApiError) setActionError(e.message);
       else setActionError(t("error"));
     } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleDelete() {
+    if (!session || !detail) return;
+    if (!confirm(t("confirmDelete"))) return;
+    setBusy("delete");
+    setActionError("");
+    try {
+      await deleteApplication(session.token, detail.id);
+      router.push("/admin/applications");
+    } catch (e) {
+      if (e instanceof ApiError) setActionError(e.message);
+      else setActionError(t("error"));
       setBusy(null);
     }
   }
@@ -396,6 +413,20 @@ export default function AdminApplicationDetailPage() {
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Delete */}
+      {session && (
+        <div className="surface-card p-5 mb-4">
+          <button
+            onClick={handleDelete}
+            disabled={busy === "delete"}
+            className="flex items-center gap-1.5 rounded-lg border border-red-500/40 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+          >
+            {busy === "delete" ? <Spinner size={11} /> : <Trash2 size={13} />}
+            {t("actionDelete")}
+          </button>
         </div>
       )}
 

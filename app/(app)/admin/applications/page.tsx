@@ -3,9 +3,12 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { Eye, Check, Trash2 } from "lucide-react";
 import {
   getSession,
   fetchApplications,
+  approveApplication,
+  deleteApplication,
   AdminApplicationListItem,
   AdminApplicationStatus,
 } from "@/lib/admin-api";
@@ -37,6 +40,7 @@ export default function AdminApplicationsPage() {
   const [items, setItems] = useState<AdminApplicationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!session) return;
@@ -56,6 +60,36 @@ export default function AdminApplicationsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const handleApprove = async (id: string) => {
+    if (!session || busyId) return;
+    if (!confirm(t("confirmApprove"))) return;
+    setBusyId(id);
+    setError("");
+    try {
+      await approveApplication(session.token, id);
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t("error"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!session || busyId) return;
+    if (!confirm(t("confirmDelete"))) return;
+    setBusyId(id);
+    setError("");
+    try {
+      await deleteApplication(session.token, id);
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t("error"));
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <div>
@@ -95,13 +129,14 @@ export default function AdminApplicationsPage() {
                 <th className="px-4 py-3 font-medium">{t("colSocial")}</th>
                 <th className="px-4 py-3 font-medium">{t("colStatus")}</th>
                 <th className="px-4 py-3 font-medium">{t("colDate")}</th>
+                <th className="px-4 py-3 font-medium text-right">{t("actions")}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-b border-line">
-                    {Array.from({ length: 6 }).map((__, j) => (
+                    {Array.from({ length: 7 }).map((__, j) => (
                       <td key={j} className="px-4 py-3">
                         <Skeleton className="h-4 w-20" />
                       </td>
@@ -110,7 +145,7 @@ export default function AdminApplicationsPage() {
                 ))
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted">
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted">
                     {t("notFound")}
                   </td>
                 </tr>
@@ -142,6 +177,36 @@ export default function AdminApplicationsPage() {
                     </td>
                     <td className="px-4 py-3 text-muted text-xs">
                       {item.createdAt ?? "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Link
+                          href={`/admin/applications/${item.id}`}
+                          title={t("actionDetail")}
+                          aria-label={t("actionDetail")}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line text-muted hover:border-accent/50 hover:text-accent transition-colors"
+                        >
+                          <Eye size={15} />
+                        </Link>
+                        <button
+                          onClick={() => handleApprove(item.id)}
+                          disabled={busyId === item.id || item.status === "APPROVED"}
+                          title={t("actionApprove")}
+                          aria-label={t("actionApprove")}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line text-muted hover:border-green-500/50 hover:text-green-600 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                        >
+                          <Check size={15} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={busyId === item.id}
+                          title={t("actionDelete")}
+                          aria-label={t("actionDelete")}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line text-muted hover:border-red-500/50 hover:text-red-600 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
