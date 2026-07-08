@@ -20,6 +20,7 @@ import {
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
 import { Spinner } from "@/app/components/Spinner";
+import { Skeleton } from "@/app/components/Skeleton";
 
 const STATUS_COLORS: Record<AdminApplicationStatus, string> = {
   SUBMITTED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
@@ -191,21 +192,34 @@ export default function AdminApplicationDetailPage() {
     }
   }
 
-  if (loading) {
+  if (loading && !detail) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Spinner size={24} className="text-accent" />
+      <div className="max-w-2xl flex flex-col gap-4">
+        <Skeleton className="h-5 w-24" />
+        <Skeleton className="h-7 w-56" />
+        <div className="surface-card p-5 flex flex-col gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full" />
+          ))}
+        </div>
+        <div className="surface-card p-5 flex flex-col gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
 
-  if (error || !detail) {
+  if (!loading && (error || !detail)) {
     return (
       <div className="py-10 text-center text-muted">
         {error || t("error")}
       </div>
     );
   }
+
+  if (!detail) return null;
 
   const status = detail.status;
 
@@ -228,7 +242,7 @@ export default function AdminApplicationDetailPage() {
           aria-label={t("reload")}
           className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line text-muted hover:border-accent/50 hover:text-accent transition-colors disabled:opacity-40"
         >
-          <RefreshCw size={15} />
+          {loading ? <Spinner size={15} /> : <RefreshCw size={15} />}
         </button>
       </div>
 

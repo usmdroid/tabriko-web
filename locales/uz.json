@@ -153,7 +153,7 @@
     "adminLabel": "Administrator",
     "youLabel": "Siz",
     "telegramVerifyTitle": "Telegram orqali tasdiqlash",
-    "telegramVerifyDesc": "Quyidagi tugmani bosib botni ishga tushiring, telefon raqamingizni ulashing va kanalingizga ENG KAM HUQUQLI admin qilib qo'shing.",
+    "telegramVerifyDesc": "Quyidagi tugmani bosib botni ishga tushiring, telefon raqamingizni ulashing va kanalingizga ENG KAM HUQUQLI admin qilib qo'shing. Buni bajargach botga qaytib /tekshirish buyrug'ini yuboring.",
     "telegramOpenBot": "Botni ochish",
     "telegramVerifiedBadge": "Tasdiqlandi",
     "telegramNotVerifiedBadge": "Tasdiqlanmagan",
