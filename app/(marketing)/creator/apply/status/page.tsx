@@ -206,7 +206,7 @@ export default function CreatorApplyStatusPage() {
         </div>
 
         {/* Telegram verification */}
-        {detail.socialType === "TELEGRAM" && detail.status !== "APPROVED" && detail.status !== "REJECTED" && (
+        {detail.socialTypes?.includes("TELEGRAM") && detail.status !== "APPROVED" && detail.status !== "REJECTED" && (
           <div className="surface-card p-5 mb-4">
             <p className="text-sm font-semibold text-primary mb-2">{t("telegramVerifyTitle")}</p>
             <p className="text-xs text-muted mb-3">{t("telegramVerifyDesc")}</p>
@@ -243,7 +243,7 @@ export default function CreatorApplyStatusPage() {
         )}
 
         {/* Instagram verification */}
-        {detail.socialType === "INSTAGRAM" && detail.status !== "APPROVED" && detail.status !== "REJECTED" && (detail.igVerifyCode || detail.igInstructions) && (
+        {detail.socialTypes?.includes("INSTAGRAM") && detail.status !== "APPROVED" && detail.status !== "REJECTED" && (detail.igVerifyCode || detail.igInstructions) && (
           <div className="surface-card p-5 mb-4">
             <p className="text-sm font-semibold text-primary mb-2">{t("igVerifyTitle")}</p>
             {detail.igVerifyCode && (

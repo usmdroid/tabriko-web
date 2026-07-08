@@ -445,7 +445,7 @@ export interface AdminApplicationListItem {
   activityType?: string;
   categoryName?: string;
   otherText?: string;
-  socialType?: AdminSocialType;
+  socialTypes?: AdminSocialType[];
   status: AdminApplicationStatus;
   createdAt: string;
 }
@@ -465,7 +465,9 @@ export interface AdminApplicationDetail {
   activityType?: string;
   categoryName?: string;
   otherText?: string;
-  socialType?: AdminSocialType;
+  passportSeries?: string;
+  passportNumber?: string;
+  socialTypes?: AdminSocialType[];
   igUsername?: string;
   telegramUsername?: string;
   sampleVideoUrl?: string;

@@ -121,7 +121,9 @@ export interface ApplicationSubmitRequest {
   activityType: ActivityType;
   categoryId?: number;
   otherText?: string;
-  socialType: SocialType;
+  passportSeries: string;
+  passportNumber: string;
+  socialTypes: SocialType[];
   igUsername?: string;
   telegramUsername?: string;
   sampleVideoUrl?: string;
@@ -152,7 +154,9 @@ export interface ApplicationDetail {
   activityType?: ActivityType;
   categoryName?: string;
   otherText?: string;
-  socialType?: SocialType;
+  passportSeries?: string;
+  passportNumber?: string;
+  socialTypes?: SocialType[];
   igUsername?: string;
   telegramUsername?: string;
   sampleVideoUrl?: string;
@@ -187,6 +191,15 @@ export async function sendApplicationOtp(phone: string): Promise<void> {
 export interface VerifyPhoneResult {
   verifyToken: string;
   igVerifyCode: string;
+  // Present when this phone already has an active application (resume its status).
+  existingApplicationId?: string;
+  existingTrackingToken?: string;
+}
+
+// Whether an active application already exists for this phone (checked before OTP).
+export async function applicationExists(phone: string): Promise<boolean> {
+  const res = await get<{ exists: boolean }>(`/applications/exists?phone=${encodeURIComponent(phone)}`);
+  return res.data.exists;
 }
 
 // Verifies the OTP immediately and exchanges it for a longer-lived verifyToken,
@@ -194,11 +207,19 @@ export interface VerifyPhoneResult {
 // racing the OTP's short TTL. Also returns igVerifyCode so the Instagram DM text
 // can be built client-side without a separate request.
 export async function verifyApplicationPhone(phone: string, code: string): Promise<VerifyPhoneResult> {
-  const res = await post<{ phone: string; verifyToken: string; igVerifyCode: string }>(
-    "/applications/verify-phone",
-    { phone, code },
-  );
-  return { verifyToken: res.data.verifyToken, igVerifyCode: res.data.igVerifyCode };
+  const res = await post<{
+    phone: string;
+    verifyToken: string;
+    igVerifyCode: string;
+    existingApplicationId?: string;
+    existingTrackingToken?: string;
+  }>("/applications/verify-phone", { phone, code });
+  return {
+    verifyToken: res.data.verifyToken,
+    igVerifyCode: res.data.igVerifyCode,
+    existingApplicationId: res.data.existingApplicationId,
+    existingTrackingToken: res.data.existingTrackingToken,
+  };
 }
 
 export async function getCategories(): Promise<Category[]> {

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { X, ExternalLink, Trash2 } from "lucide-react";
+import { X, ExternalLink, Trash2, RefreshCw } from "lucide-react";
 import {
   getSession,
   fetchApplication,
@@ -220,6 +220,16 @@ export default function AdminApplicationDetailPage() {
         <span className={`inline-flex rounded-full px-3 py-0.5 text-xs font-semibold ${STATUS_COLORS[status]}`}>
           {t(`status${status}`)}
         </span>
+        <button
+          type="button"
+          onClick={load}
+          disabled={loading}
+          title={t("reload")}
+          aria-label={t("reload")}
+          className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line text-muted hover:border-accent/50 hover:text-accent transition-colors disabled:opacity-40"
+        >
+          <RefreshCw size={15} />
+        </button>
       </div>
 
       {actionError && (
@@ -248,9 +258,17 @@ export default function AdminApplicationDetailPage() {
           <div>
             <p className="text-xs text-muted mb-0.5">{t("colSocial")}</p>
             <p className="font-medium text-primary">
-              {detail.socialType ?? "—"}
+              {detail.socialTypes?.length ? detail.socialTypes.join(", ") : "—"}
               {detail.igUsername && ` · @${detail.igUsername}`}
               {detail.telegramUsername && ` · @${detail.telegramUsername}`}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted mb-0.5">{t("passport")}</p>
+            <p className="font-medium text-primary">
+              {detail.passportSeries || detail.passportNumber
+                ? `${detail.passportSeries ?? ""} ${detail.passportNumber ?? ""}`.trim()
+                : "—"}
             </p>
           </div>
         </div>
@@ -283,38 +301,61 @@ export default function AdminApplicationDetailPage() {
       <div className="surface-card p-5 mb-4">
         <p className="text-sm font-semibold text-primary mb-3">{t("verificationTitle")}</p>
 
-        {detail.socialType === "TELEGRAM" && (
+        {detail.socialTypes?.includes("TELEGRAM") && (
           <div>
             <p className="text-xs font-medium text-muted mb-2">{t("telegramTitle")}</p>
-            {detail.verification?.telegram ? (
-              <div className="text-sm space-y-1">
-                {detail.verification.telegram.channelName && (
-                  <p className="text-primary">
-                    <span className="text-muted text-xs">{t("channel")}: </span>
-                    {detail.verification.telegram.channelName}
-                  </p>
-                )}
-                {detail.verification.telegram.subscribers !== undefined && (
-                  <p className="text-primary">
-                    <span className="text-muted text-xs">{t("subscribers")}: </span>
-                    {detail.verification.telegram.subscribers}
-                  </p>
-                )}
-                <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                  detail.verification.telegram.verified
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                }`}>
-                  {detail.verification.telegram.verified ? t("verified") : t("notVerified")}
-                </span>
-              </div>
-            ) : (
-              <p className="text-xs text-muted">{t("notVerified")}</p>
-            )}
+            {(() => {
+              const tg = detail.verification?.telegram;
+              const hasBotData = tg && (tg.channelName != null || tg.subscribers != null);
+              return (
+                <div className="text-sm space-y-1">
+                  {tg?.channelName != null && (
+                    <p className="text-primary">
+                      <span className="text-muted text-xs">{t("channel")}: </span>
+                      {tg.channelName}
+                    </p>
+                  )}
+                  {tg?.channelUsername != null && (
+                    <p className="text-primary">
+                      <span className="text-muted text-xs">{t("channelUsername")}: </span>
+                      @{tg.channelUsername}
+                    </p>
+                  )}
+                  {tg?.subscribers != null && (
+                    <p className="text-primary">
+                      <span className="text-muted text-xs">{t("subscribers")}: </span>
+                      {tg.subscribers}
+                    </p>
+                  )}
+                  {tg?.ownerStatus != null && (
+                    <p className="text-primary">
+                      <span className="text-muted text-xs">{t("ownerStatus")}: </span>
+                      {tg.ownerStatus}
+                    </p>
+                  )}
+                  {tg?.chatType != null && (
+                    <p className="text-primary">
+                      <span className="text-muted text-xs">{t("chatType")}: </span>
+                      {tg.chatType}
+                    </p>
+                  )}
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                    tg?.verified
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                  }`}>
+                    {tg?.verified ? t("verified") : t("notVerified")}
+                  </span>
+                  {!hasBotData && (
+                    <p className="text-xs text-muted pt-1">{t("botDataPending")}</p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
-        {detail.socialType === "INSTAGRAM" && (
+        {detail.socialTypes?.includes("INSTAGRAM") && (
           <div>
             <p className="text-xs font-medium text-muted mb-2">{t("igTitle")}</p>
             <div className="text-sm space-y-2">

@@ -168,7 +168,7 @@ export default function AdminApplicationsPage() {
                       {item.categoryName ?? item.otherText ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-muted">
-                      {item.socialType ?? "—"}
+                      {item.socialTypes?.length ? item.socialTypes.join(", ") : "—"}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[item.status]}`}>

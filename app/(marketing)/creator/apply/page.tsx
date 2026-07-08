@@ -8,6 +8,7 @@ import { Spinner } from "@/app/components/Spinner";
 import {
   sendApplicationOtp,
   verifyApplicationPhone,
+  applicationExists,
   getCategories,
   submitApplication,
   uploadSampleVideo,
@@ -43,6 +44,7 @@ export default function CreatorApplyPage() {
   const [phone, setPhone] = useState("");
   const [sendingOtp, setSendingOtp] = useState(false);
   const [otpError, setOtpError] = useState("");
+  const [showExistingPopup, setShowExistingPopup] = useState(false);
 
   // Phone verification (OTP is confirmed right away, before the rest of the form)
   const [verifyCode, setVerifyCode] = useState("");
@@ -56,7 +58,9 @@ export default function CreatorApplyPage() {
   const [activityType, setActivityType] = useState<ActivityType | "">("");
   const [categoryId, setCategoryId] = useState<number | "">("");
   const [otherText, setOtherText] = useState("");
-  const [socialType, setSocialType] = useState<SocialType | "">("");
+  const [passportSeries, setPassportSeries] = useState("");
+  const [passportNumber, setPassportNumber] = useState("");
+  const [socialTypes, setSocialTypes] = useState<SocialType[]>([]);
   const [igUsername, setIgUsername] = useState("");
   const [telegramUsername, setTelegramUsername] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
@@ -75,6 +79,7 @@ export default function CreatorApplyPage() {
 
   const selectedCountry = COUNTRY_CODES.find((c) => c.code === countryCode) ?? COUNTRY_CODES[0];
   const phoneValid = localNumber.length === selectedCountry.digits;
+  const passportValid = /^[A-Za-z]{2}$/.test(passportSeries.trim()) && /^[0-9]{7}$/.test(passportNumber.trim());
 
   const activityLabel =
     activityType === "OTHER" ? otherText.trim() : categories.find((c) => c.id === categoryId)?.name ?? "";
@@ -97,8 +102,30 @@ export default function CreatorApplyPage() {
     setSendingOtp(true);
     setOtpError("");
     try {
-      await sendApplicationOtp(fullPhone);
+      // Before sending an OTP, check whether this phone already has an application.
+      const exists = await applicationExists(fullPhone);
       setPhone(fullPhone);
+      if (exists) {
+        setShowExistingPopup(true);
+        return;
+      }
+      await sendApplicationOtp(fullPhone);
+      setPhase("verify");
+    } catch (err) {
+      if (err instanceof ApiError) setOtpError(err.message);
+      else setOtpError(t("loadError"));
+    } finally {
+      setSendingOtp(false);
+    }
+  }
+
+  // User confirmed they want to view their existing application: send OTP, then verify.
+  async function handleResumeExisting() {
+    setShowExistingPopup(false);
+    setSendingOtp(true);
+    setOtpError("");
+    try {
+      await sendApplicationOtp(phone);
       setPhase("verify");
     } catch (err) {
       if (err instanceof ApiError) setOtpError(err.message);
@@ -114,7 +141,17 @@ export default function CreatorApplyPage() {
     setVerifying(true);
     setVerifyError("");
     try {
-      const { verifyToken: token, igVerifyCode: code } = await verifyApplicationPhone(phone, verifyCode);
+      const { verifyToken: token, igVerifyCode: code, existingApplicationId, existingTrackingToken } =
+        await verifyApplicationPhone(phone, verifyCode);
+      // If an application already exists for this verified phone, jump to its status page.
+      if (existingApplicationId && existingTrackingToken) {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ applicationId: existingApplicationId, trackingToken: existingTrackingToken }),
+        );
+        router.push("/creator/apply/status");
+        return;
+      }
       setVerifyToken(token);
       setIgVerifyCode(code);
       setPhase("details");
@@ -199,7 +236,7 @@ export default function CreatorApplyPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!activityType || !socialType || !name.trim() || sampleVideoUploading) return;
+    if (!activityType || socialTypes.length === 0 || !name.trim() || !passportValid || sampleVideoUploading) return;
     setSubmitting(true);
     setSubmitError("");
     try {
@@ -210,9 +247,11 @@ export default function CreatorApplyPage() {
         activityType,
         categoryId: activityType === "CATEGORY" && categoryId !== "" ? Number(categoryId) : undefined,
         otherText: activityType === "OTHER" ? otherText.trim() || undefined : undefined,
-        socialType,
-        igUsername: socialType === "INSTAGRAM" ? igUsername.trim().replace(/^@/, "") || undefined : undefined,
-        telegramUsername: socialType === "TELEGRAM" ? telegramUsername.trim().replace(/^@/, "") || undefined : undefined,
+        passportSeries: passportSeries.trim().toUpperCase(),
+        passportNumber: passportNumber.trim(),
+        socialTypes,
+        igUsername: socialTypes.includes("INSTAGRAM") ? igUsername.trim().replace(/^@/, "") || undefined : undefined,
+        telegramUsername: socialTypes.includes("TELEGRAM") ? telegramUsername.trim().replace(/^@/, "") || undefined : undefined,
         sampleVideoUrl: sampleVideoUrl || undefined,
       });
       localStorage.setItem(
@@ -297,6 +336,31 @@ export default function CreatorApplyPage() {
             </button>
           </form>
         </div>
+
+        {showExistingPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+            <div className="w-full max-w-sm surface-card p-6 flex flex-col gap-3">
+              <p className="text-base font-semibold text-primary">{t("existingTitle")}</p>
+              <p className="text-sm text-muted">{t("existingDesc")}</p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowExistingPopup(false)}
+                  className="flex-1 rounded-lg border border-line px-4 py-2.5 text-sm font-medium text-muted hover:text-primary transition-colors"
+                >
+                  {t("existingCancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResumeExisting}
+                  className="flex-1 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-hover transition-colors"
+                >
+                  {t("existingViewBtn")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -439,6 +503,31 @@ export default function CreatorApplyPage() {
             </div>
           )}
 
+          {/* Passport */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted">{t("passportLabel")}</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={passportSeries}
+                onChange={(e) => setPassportSeries(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2))}
+                placeholder={t("passportSeriesPlaceholder")}
+                maxLength={2}
+                className="w-20 rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-primary uppercase focus:outline-none focus:border-accent"
+              />
+              <input
+                type="text"
+                inputMode="numeric"
+                value={passportNumber}
+                onChange={(e) => setPassportNumber(e.target.value.replace(/[^0-9]/g, "").slice(0, 7))}
+                placeholder={t("passportNumberPlaceholder")}
+                maxLength={7}
+                className="flex-1 rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-primary focus:outline-none focus:border-accent"
+              />
+            </div>
+            <p className="text-xs text-muted">{t("passportHint")}</p>
+          </div>
+
           {/* Social network */}
           <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-muted">{t("socialTypeLabel")}</label>
@@ -447,9 +536,13 @@ export default function CreatorApplyPage() {
                 <button
                   key={type}
                   type="button"
-                  onClick={() => setSocialType(type)}
+                  onClick={() =>
+                    setSocialTypes((prev) =>
+                      prev.includes(type) ? prev.filter((s) => s !== type) : [...prev, type],
+                    )
+                  }
                   className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors ${
-                    socialType === type
+                    socialTypes.includes(type)
                       ? "border-accent bg-accent/10 text-accent"
                       : "border-line bg-surface text-muted hover:border-accent/50"
                   }`}
@@ -461,7 +554,7 @@ export default function CreatorApplyPage() {
           </div>
 
           {/* Telegram username (bot verification happens after submit, on the status page) */}
-          {socialType === "TELEGRAM" && (
+          {socialTypes.includes("TELEGRAM") && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted">{t("tgUsernameLabel")}</label>
@@ -478,7 +571,7 @@ export default function CreatorApplyPage() {
           )}
 
           {/* Instagram username + DM instructions */}
-          {socialType === "INSTAGRAM" && (
+          {socialTypes.includes("INSTAGRAM") && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted">{t("igUsernameLabel")}</label>
@@ -563,7 +656,8 @@ export default function CreatorApplyPage() {
               sampleVideoUploading ||
               !name.trim() ||
               !activityType ||
-              !socialType
+              !passportValid ||
+              socialTypes.length === 0
             }
             className="flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-hover transition-colors disabled:opacity-60"
           >
