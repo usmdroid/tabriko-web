@@ -81,6 +81,29 @@ export interface AdminOccasionRequest {
   sortOrder: number;
 }
 
+export interface AdminPromotion {
+  id: number;
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+  color?: string;
+  categoryId?: number;
+  externalUrl?: string;
+  active: boolean;
+  sortOrder: number;
+}
+
+export interface AdminPromotionRequest {
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+  color?: string;
+  categoryId?: number;
+  externalUrl?: string;
+  active: boolean;
+  sortOrder: number;
+}
+
 export interface AdminOrder {
   id: string;
   userId: string;
@@ -665,6 +688,43 @@ export async function updateOccasion(token: string, id: number, data: AdminOccas
 export async function deleteOccasion(token: string, id: number): Promise<void> {
   try {
     await del(`/admin/occasions/${id}`, token);
+  } catch (e) {
+    rethrow401(e);
+  }
+}
+
+// ─── Promotions ───────────────────────────────────────────────────────────────
+
+export async function fetchPromotions(token: string): Promise<AdminPromotion[]> {
+  try {
+    const res = await get<AdminPromotion[]>("/admin/promotions", token);
+    return res.data ?? [];
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function createPromotion(token: string, data: AdminPromotionRequest): Promise<AdminPromotion> {
+  try {
+    const res = await post<AdminPromotion>("/admin/promotions", data, token);
+    return res.data;
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function updatePromotion(token: string, id: number, data: AdminPromotionRequest): Promise<AdminPromotion> {
+  try {
+    const res = await put<AdminPromotion>(`/admin/promotions/${id}`, data, token);
+    return res.data;
+  } catch (e) {
+    return rethrow401(e);
+  }
+}
+
+export async function deletePromotion(token: string, id: number): Promise<void> {
+  try {
+    await del(`/admin/promotions/${id}`, token);
   } catch (e) {
     rethrow401(e);
   }
