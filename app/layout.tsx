@@ -48,8 +48,12 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: ["/og-image.png"],
   },
+  // Locale switching is client-side only (cookie/localStorage) and doesn't
+  // change the URL, so there's no distinct per-language page to point to —
+  // claiming uz/ru/en all as separate alternates would be misleading to
+  // crawlers. "x-default" (this single URL serves every locale) is accurate.
   alternates: {
-    languages: { uz: "/", en: "/", ru: "/", "x-default": "/" },
+    languages: { "x-default": "/" },
   },
 };
 

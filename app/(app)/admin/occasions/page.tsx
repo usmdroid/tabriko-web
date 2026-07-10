@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   fetchOccasions,
   createOccasion,
@@ -12,10 +12,10 @@ import {
   AdminOccasionRequest,
   AdminCategory,
 } from "@/lib/admin-api";
-import { ApiError } from "@/lib/api";
-import { isAbortError } from "@/lib/hooks";
-import { Skeleton } from "@/app/components/Skeleton";
-import { Spinner } from "@/app/components/Spinner";
+import { ResourceTable, Column } from "../_crud/ResourceTable";
+import { CrudModal, Field } from "../_crud/CrudModal";
+import { ConfirmModal } from "../_crud/ConfirmModal";
+import { useCrudResource } from "../_crud/useCrudResource";
 
 const EMPTY_FORM: AdminOccasionRequest = {
   title: "",
@@ -30,68 +30,17 @@ const EMPTY_FORM: AdminOccasionRequest = {
 };
 
 export default function AdminOccasionsPage() {
-  const [occasions, setOccasions] = useState<AdminOccasion[]>([]);
-  const [categories, setCategories] = useState<AdminCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const t = useTranslations("admin.occasions");
+  const tAdmin = useTranslations("admin");
 
-  // Create/edit modal
-  const [showModal, setShowModal] = useState(false);
-  const [editTarget, setEditTarget] = useState<AdminOccasion | null>(null);
-  const [form, setForm] = useState<AdminOccasionRequest>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-  const [modalError, setModalError] = useState("");
-
-  // Delete confirm modal
-  const [confirmDelete, setConfirmDelete] = useState<AdminOccasion | null>(null);
-  const [deleting, setDeleting] = useState(false);
-
-  const load = useCallback(async (signal?: AbortSignal) => {
-    setLoading(true);
-    setError("");
-    try {
-      const [occ, cats] = await Promise.all([
-        fetchOccasions(signal),
-        getAdminCategories(signal),
-      ]);
-      if (signal?.aborted) return;
-      setOccasions(occ);
-      setCategories(cats);
-    } catch (e) {
-      if (isAbortError(e)) return;
-      if (e instanceof ApiError) setError(e.message);
-      else setError("Ma'lumot mavjud emas.");
-    } finally {
-      if (!signal?.aborted) setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    load(controller.signal);
-    return () => controller.abort();
-  }, [load]);
-
-  const categoryName = useCallback(
-    (categoryId?: number) => {
-      if (!categoryId) return "—";
-      return categories.find((c) => c.id === categoryId)?.nameUz ?? "—";
-    },
-    [categories],
-  );
-
-  const activeCategories = categories.filter((c) => !c.archived);
-
-  function openCreate() {
-    setEditTarget(null);
-    setForm(EMPTY_FORM);
-    setModalError("");
-    setShowModal(true);
-  }
-
-  function openEdit(occ: AdminOccasion) {
-    setEditTarget(occ);
-    setForm({
+  const crud = useCrudResource<AdminOccasion, AdminOccasionRequest, AdminCategory[]>({
+    fetchList: fetchOccasions,
+    fetchExtra: getAdminCategories,
+    create: createOccasion,
+    update: updateOccasion,
+    remove: (o) => deleteOccasion(o.id),
+    emptyForm: EMPTY_FORM,
+    toForm: (occ) => ({
       title: occ.title,
       eventDate: occ.eventDate,
       recurringYearly: occ.recurringYearly,
@@ -101,342 +50,148 @@ export default function AdminOccasionsPage() {
       categoryId: occ.categoryId,
       active: occ.active,
       sortOrder: occ.sortOrder,
-    });
-    setModalError("");
-    setShowModal(true);
-  }
+    }),
+    normalize: (f) => ({
+      title: f.title.trim(),
+      eventDate: f.eventDate,
+      recurringYearly: f.recurringYearly,
+      emoji: f.emoji?.trim() || undefined,
+      color: f.color?.trim() || undefined,
+      imageUrl: f.imageUrl?.trim() || undefined,
+      categoryId: f.categoryId,
+      active: f.active,
+      sortOrder: f.sortOrder,
+    }),
+    messages: { loadError: tAdmin("loadError"), saveError: tAdmin("saveError") },
+  });
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setModalError("");
-    try {
-      const payload: AdminOccasionRequest = {
-        title: form.title.trim(),
-        eventDate: form.eventDate,
-        recurringYearly: form.recurringYearly,
-        emoji: form.emoji?.trim() || undefined,
-        color: form.color?.trim() || undefined,
-        imageUrl: form.imageUrl?.trim() || undefined,
-        categoryId: form.categoryId,
-        active: form.active,
-        sortOrder: form.sortOrder,
-      };
-      if (editTarget) {
-        await updateOccasion(editTarget.id, payload);
-      } else {
-        await createOccasion(payload);
-      }
-      setShowModal(false);
-      await load();
-    } catch (e) {
-      if (e instanceof ApiError) setModalError(e.message);
-      else setModalError("Xatolik yuz berdi.");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const categories = crud.extra ?? [];
+  const activeCategories = categories.filter((c) => !c.archived);
+  const categoryName = (categoryId?: number) => {
+    if (!categoryId) return "—";
+    return categories.find((c) => c.id === categoryId)?.nameUz ?? "—";
+  };
 
-  async function handleDelete() {
-    if (!confirmDelete) return;
-    setDeleting(true);
-    try {
-      await deleteOccasion(confirmDelete.id);
-      setConfirmDelete(null);
-      await load();
-    } catch (e) {
-      if (e instanceof ApiError) setError(e.message);
-    } finally {
-      setDeleting(false);
-    }
-  }
+  const columns: Column<AdminOccasion>[] = [
+    {
+      header: t("colTitle"),
+      className: "px-4 py-3 font-medium text-primary",
+      cell: (occ) => `${occ.emoji ? `${occ.emoji} ` : ""}${occ.title}`,
+    },
+    { header: t("colDate"), cell: (occ) => occ.eventDate },
+    { header: t("colRecurring"), cell: (occ) => (occ.recurringYearly ? t("recurringYearly") : t("recurringOnce")) },
+    {
+      header: t("colStatus"),
+      className: "px-4 py-3",
+      cell: (occ) => (
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+            occ.active
+              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+              : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+          }`}
+        >
+          {occ.active ? tAdmin("active") : tAdmin("inactive")}
+        </span>
+      ),
+    },
+    { header: t("colSort"), cell: (occ) => occ.sortOrder },
+    { header: t("colCategory"), cell: (occ) => categoryName(occ.categoryId) },
+    {
+      header: tAdmin("actionsHeader"),
+      className: "px-4 py-3",
+      cell: (occ) => (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => crud.openEdit(occ)}
+            className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-accent hover:text-accent transition-colors"
+          >
+            <Pencil size={11} />
+            {tAdmin("edit")}
+          </button>
+          <button
+            onClick={() => crud.setConfirmTarget(occ)}
+            className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-red-500 hover:text-red-500 transition-colors"
+          >
+            <Trash2 size={11} />
+            {tAdmin("delete")}
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  const fields: Field<AdminOccasionRequest>[] = [
+    { name: "title", label: t("fieldTitle"), type: "text", required: true },
+    { name: "eventDate", label: t("fieldDate"), type: "date", required: true },
+    { name: "recurringYearly", label: t("fieldRecurring"), type: "checkbox" },
+    { name: "emoji", label: t("fieldEmoji"), type: "text", placeholder: "🎉" },
+    { name: "color", label: t("fieldColor"), type: "text", placeholder: "#EC407A" },
+    { name: "imageUrl", label: t("fieldImage"), type: "url", placeholder: "https://..." },
+    {
+      name: "categoryId",
+      label: t("fieldCategory"),
+      type: "select",
+      emptyOption: tAdmin("categoryless"),
+      options: activeCategories.map((c) => ({ value: c.id, label: c.nameUz })),
+    },
+    { name: "sortOrder", label: t("fieldSort"), type: "number" },
+    { name: "active", label: t("fieldActive"), type: "checkbox" },
+  ];
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-primary">Sanalar</h1>
+        <h1 className="text-xl font-semibold text-primary">{t("title")}</h1>
         <button
-          onClick={openCreate}
+          onClick={crud.openCreate}
           className="flex items-center gap-1.5 btn-neon rounded-lg px-4 py-2 text-sm font-medium text-white"
         >
           <Plus size={15} />
-          Qo&apos;shish
+          {tAdmin("add")}
         </button>
       </div>
 
-      {error && (
+      {crud.error && (
         <p className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
-          {error}
+          {crud.error}
         </p>
       )}
 
-      <div className="surface-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-line text-left text-xs text-muted">
-                <th className="px-4 py-3 font-medium">Nomi</th>
-                <th className="px-4 py-3 font-medium">Sana</th>
-                <th className="px-4 py-3 font-medium">Takrorlanish</th>
-                <th className="px-4 py-3 font-medium">Holat</th>
-                <th className="px-4 py-3 font-medium">Tartib</th>
-                <th className="px-4 py-3 font-medium">Kategoriya</th>
-                <th className="px-4 py-3 font-medium">Amallar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <tr key={i} className="border-b border-line">
-                    {Array.from({ length: 7 }).map((__, j) => (
-                      <td key={j} className="px-4 py-3">
-                        <Skeleton className="h-4 w-20" />
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : occasions.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-muted text-xs">
-                    Sanalar yo&apos;q
-                  </td>
-                </tr>
-              ) : (
-                occasions.map((occ) => (
-                  <tr key={occ.id} className="border-b border-line last:border-0 hover:bg-card/50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-primary">
-                      {occ.emoji ? `${occ.emoji} ` : ""}
-                      {occ.title}
-                    </td>
-                    <td className="px-4 py-3 text-muted">{occ.eventDate}</td>
-                    <td className="px-4 py-3 text-muted">
-                      {occ.recurringYearly ? "Yillik" : "Bir martalik"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                          occ.active
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                        }`}
-                      >
-                        {occ.active ? "Faol" : "Nofaol"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-muted">{occ.sortOrder}</td>
-                    <td className="px-4 py-3 text-muted">{categoryName(occ.categoryId)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => openEdit(occ)}
-                          className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-accent hover:text-accent transition-colors"
-                        >
-                          <Pencil size={11} />
-                          Tahrirlash
-                        </button>
-                        <button
-                          onClick={() => setConfirmDelete(occ)}
-                          className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-red-500 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 size={11} />
-                          O&apos;chirish
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <ResourceTable
+        columns={columns}
+        rows={crud.items}
+        loading={crud.loading}
+        emptyText={t("empty")}
+        rowKey={(occ) => occ.id}
+      />
 
-      {/* Create/edit modal */}
-      {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-          onClick={() => setShowModal(false)}
-        >
-          <form
-            onSubmit={handleSave}
-            className="surface-card w-full max-w-sm p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
-            style={{ animation: "modalIn 200ms ease forwards" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-primary">
-                {editTarget ? "Sanani tahrirlash" : "Sana qo'shish"}
-              </h2>
-              <button type="button" onClick={() => setShowModal(false)} className="text-muted hover:text-primary">
-                <X size={18} />
-              </button>
-            </div>
-
-            {modalError && (
-              <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
-                {modalError}
-              </p>
-            )}
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Nomi</label>
-              <input
-                type="text"
-                required
-                value={form.title}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Sana</label>
-              <input
-                type="date"
-                required
-                value={form.eventDate}
-                onChange={(e) => setForm((f) => ({ ...f, eventDate: e.target.value }))}
-                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
-              />
-            </div>
-
-            <label className="flex items-center gap-2 text-sm text-primary">
-              <input
-                type="checkbox"
-                checked={form.recurringYearly}
-                onChange={(e) => setForm((f) => ({ ...f, recurringYearly: e.target.checked }))}
-                className="rounded border-line"
-              />
-              Har yili takrorlanadi
-            </label>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Emoji (ixtiyoriy)</label>
-              <input
-                type="text"
-                value={form.emoji ?? ""}
-                onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))}
-                placeholder="🎉"
-                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Rang (ixtiyoriy)</label>
-              <input
-                type="text"
-                value={form.color ?? ""}
-                onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
-                placeholder="#EC407A"
-                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Rasm URL (ixtiyoriy)</label>
-              <input
-                type="url"
-                value={form.imageUrl ?? ""}
-                onChange={(e) => setForm((f) => ({ ...f, imageUrl: e.target.value }))}
-                placeholder="https://..."
-                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Kategoriya (ixtiyoriy)</label>
-              <select
-                value={form.categoryId ?? ""}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    categoryId: e.target.value ? Number(e.target.value) : undefined,
-                  }))
-                }
-                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
-              >
-                <option value="">Kategoriyasiz</option>
-                {activeCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nameUz}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Tartib raqami</label>
-              <input
-                type="number"
-                value={form.sortOrder}
-                onChange={(e) => setForm((f) => ({ ...f, sortOrder: Number(e.target.value) }))}
-                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
-              />
-            </div>
-
-            <label className="flex items-center gap-2 text-sm text-primary">
-              <input
-                type="checkbox"
-                checked={form.active}
-                onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
-                className="rounded border-line"
-              />
-              Faol
-            </label>
-
-            <div className="flex gap-2 justify-end pt-1">
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="rounded-lg border border-line px-4 py-2 text-sm text-muted hover:bg-card transition-colors"
-              >
-                Bekor qilish
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-hover transition-colors disabled:opacity-60"
-              >
-                {saving && <Spinner size={13} />}
-                Saqlash
-              </button>
-            </div>
-          </form>
-        </div>
+      {crud.showModal && (
+        <CrudModal
+          titleId="occasion-modal-title"
+          title={crud.editTarget ? t("editTitle") : t("createTitle")}
+          fields={fields}
+          form={crud.form}
+          setForm={crud.setForm}
+          onSubmit={crud.save}
+          onClose={crud.closeModal}
+          saving={crud.saving}
+          error={crud.modalError}
+          saveLabel={tAdmin("save")}
+          cancelLabel={tAdmin("cancel")}
+          scroll
+        />
       )}
 
-      {/* Delete confirm modal */}
-      {confirmDelete && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-          onClick={() => setConfirmDelete(null)}
-        >
-          <div
-            className="surface-card w-full max-w-xs p-6 flex flex-col gap-4"
-            style={{ animation: "modalIn 200ms ease forwards" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="text-sm font-medium text-primary">
-              &ldquo;{confirmDelete.title}&rdquo; sanasini o&apos;chirishni tasdiqlaysizmi?
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setConfirmDelete(null)}
-                className="rounded-lg border border-line px-4 py-2 text-sm text-muted hover:bg-card transition-colors"
-              >
-                Bekor qilish
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex items-center gap-1.5 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 transition-colors disabled:opacity-60"
-              >
-                {deleting && <Spinner size={13} />}
-                O&apos;chirish
-              </button>
-            </div>
-          </div>
-        </div>
+      {crud.confirmTarget && (
+        <ConfirmModal
+          message={t("deleteConfirm", { title: crud.confirmTarget.title })}
+          confirmLabel={tAdmin("delete")}
+          cancelLabel={tAdmin("cancel")}
+          onConfirm={crud.confirmDelete}
+          onClose={() => crud.setConfirmTarget(null)}
+          busy={crud.deleting}
+        />
       )}
     </div>
   );

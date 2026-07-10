@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { login, sendOtp, resetPassword, saveSession } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
 import { Spinner } from "@/app/components/Spinner";
@@ -11,6 +12,7 @@ type Step = "login" | "reset-phone" | "reset-code";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const t = useTranslations("admin.login");
   const [step, setStep] = useState<Step>("login");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -21,6 +23,14 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [resetSuccess, setResetSuccess] = useState(false);
 
+  function handleApiError(err: unknown) {
+    if (err instanceof ApiError) {
+      setError(err.message || t("genericError"));
+    } else {
+      setError(t("networkError"));
+    }
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -30,11 +40,7 @@ export default function AdminLoginPage() {
       saveSession(session);
       router.replace("/admin");
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message || "Xatolik yuz berdi.");
-      } else {
-        setError("Tarmoq xatosi. Internet aloqasini tekshiring.");
-      }
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -48,11 +54,7 @@ export default function AdminLoginPage() {
       await sendOtp(resetPhone);
       setStep("reset-code");
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message || "Xatolik yuz berdi.");
-      } else {
-        setError("Tarmoq xatosi. Internet aloqasini tekshiring.");
-      }
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -71,11 +73,7 @@ export default function AdminLoginPage() {
       setNewPassword("");
       setStep("login");
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message || "Xatolik yuz berdi.");
-      } else {
-        setError("Tarmoq xatosi. Internet aloqasini tekshiring.");
-      }
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -89,17 +87,17 @@ export default function AdminLoginPage() {
             {BRAND}
             <span className="text-accent">.</span>
           </span>
-          <p className="mt-1 text-sm text-muted">Xodimlar paneli</p>
+          <p className="mt-1 text-sm text-muted">{t("subtitle")}</p>
         </div>
 
         <div className="surface-card p-6 flex flex-col gap-4">
           <h1 className="text-lg font-semibold text-primary">
-            {step === "login" ? "Kirish" : "Parolni o’rnatish"}
+            {step === "login" ? t("loginTitle") : t("resetTitle")}
           </h1>
 
           {resetSuccess && step === "login" && (
             <p className="text-sm text-green-600 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
-              Parol muvaffaqiyatli o&apos;rnatildi. Endi kiring.
+              {t("resetSuccess")}
             </p>
           )}
 
@@ -113,7 +111,7 @@ export default function AdminLoginPage() {
             <form onSubmit={handleLogin} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted" htmlFor="phone">
-                  Telefon raqam
+                  {t("phoneLabel")}
                 </label>
                 <input
                   id="phone"
@@ -129,7 +127,7 @@ export default function AdminLoginPage() {
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted" htmlFor="password">
-                  Parol
+                  {t("passwordLabel")}
                 </label>
                 <input
                   id="password"
@@ -149,7 +147,7 @@ export default function AdminLoginPage() {
                 className="btn-neon mt-1 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {loading && <Spinner size={14} />}
-                {loading ? "Yuklanmoqda..." : "Kirish"}
+                {loading ? t("loading") : t("loginBtn")}
               </button>
 
               <button
@@ -157,7 +155,7 @@ export default function AdminLoginPage() {
                 onClick={() => { setResetPhone(phone); setError(""); setResetSuccess(false); setStep("reset-phone"); }}
                 className="text-xs text-muted hover:text-primary transition-colors text-center"
               >
-                Parolni o&apos;rnatish / unutdim
+                {t("forgotPassword")}
               </button>
             </form>
           )}
@@ -165,12 +163,12 @@ export default function AdminLoginPage() {
           {step === "reset-phone" && (
             <form onSubmit={handleSendResetOtp} className="flex flex-col gap-4">
               <p className="text-xs text-muted">
-                Telefon raqamingizni kiriting. SMS kod yuboriladi.
+                {t("resetPhoneDesc")}
               </p>
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted" htmlFor="reset-phone">
-                  Telefon raqam
+                  {t("phoneLabel")}
                 </label>
                 <input
                   id="reset-phone"
@@ -190,7 +188,7 @@ export default function AdminLoginPage() {
                 className="btn-neon mt-1 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {loading && <Spinner size={14} />}
-                {loading ? "Yuklanmoqda..." : "Kod yuborish"}
+                {loading ? t("loading") : t("sendCodeBtn")}
               </button>
 
               <button
@@ -198,7 +196,7 @@ export default function AdminLoginPage() {
                 onClick={() => { setStep("login"); setError(""); }}
                 className="text-xs text-muted hover:text-primary transition-colors text-center"
               >
-                Kirishga qaytish
+                {t("backToLogin")}
               </button>
             </form>
           )}
@@ -206,12 +204,12 @@ export default function AdminLoginPage() {
           {step === "reset-code" && (
             <form onSubmit={handleResetPassword} className="flex flex-col gap-4">
               <p className="text-xs text-muted">
-                <span className="text-primary font-medium">{resetPhone}</span> raqamiga SMS kod yuborildi.
+                {t("codeSentTo", { phone: resetPhone })}
               </p>
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted" htmlFor="code">
-                  Tasdiqlash kodi
+                  {t("codeLabel")}
                 </label>
                 <input
                   id="code"
@@ -228,7 +226,7 @@ export default function AdminLoginPage() {
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted" htmlFor="new-password">
-                  Yangi parol (≥ 6 belgi)
+                  {t("newPasswordLabel")}
                 </label>
                 <input
                   id="new-password"
@@ -249,7 +247,7 @@ export default function AdminLoginPage() {
                 className="btn-neon mt-1 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {loading && <Spinner size={14} />}
-                {loading ? "Yuklanmoqda..." : "Parolni o’rnatish"}
+                {loading ? t("loading") : t("setPasswordBtn")}
               </button>
 
               <button
@@ -257,7 +255,7 @@ export default function AdminLoginPage() {
                 onClick={() => { setStep("reset-phone"); setCode(""); setError(""); }}
                 className="text-xs text-muted hover:text-primary transition-colors text-center"
               >
-                Raqamni o&apos;zgartirish
+                {t("changePhone")}
               </button>
             </form>
           )}

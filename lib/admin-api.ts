@@ -1,6 +1,7 @@
 import { post, ApiError } from "./api";
 import { authGet, authPost, authPatch, authPut, authDel } from "./auth-fetch";
 import { getSession as getSessionInfo, saveSession as saveSessionInfo, clearSession as clearSessionInfo, type SessionInfo } from "./session";
+import { getCurrentLocale, INTL_LOCALE_TAG } from "./locale";
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -195,7 +196,7 @@ interface BackendUserResponse {
 function formatDate(raw: string | number | null | undefined): string {
   if (raw == null) return "—";
   try {
-    return new Date(raw).toLocaleDateString("uz-UZ");
+    return new Date(raw).toLocaleDateString(INTL_LOCALE_TAG[getCurrentLocale()]);
   } catch {
     return String(raw);
   }
