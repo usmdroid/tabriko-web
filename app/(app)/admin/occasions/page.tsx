@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import {
-  getSession,
   fetchOccasions,
   createOccasion,
   updateOccasion,
@@ -14,6 +13,7 @@ import {
   AdminCategory,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
+import { isAbortError } from "@/lib/hooks";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Spinner } from "@/app/components/Spinner";
 
@@ -46,29 +46,30 @@ export default function AdminOccasionsPage() {
   const [confirmDelete, setConfirmDelete] = useState<AdminOccasion | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const session = useMemo(() => getSession(), []);
-
-  const load = useCallback(async () => {
-    if (!session) return;
+  const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError("");
     try {
       const [occ, cats] = await Promise.all([
-        fetchOccasions(session.token),
-        getAdminCategories(session.token),
+        fetchOccasions(signal),
+        getAdminCategories(signal),
       ]);
+      if (signal?.aborted) return;
       setOccasions(occ);
       setCategories(cats);
     } catch (e) {
+      if (isAbortError(e)) return;
       if (e instanceof ApiError) setError(e.message);
       else setError("Ma'lumot mavjud emas.");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   const categoryName = useCallback(
@@ -107,7 +108,6 @@ export default function AdminOccasionsPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!session) return;
     setSaving(true);
     setModalError("");
     try {
@@ -123,9 +123,9 @@ export default function AdminOccasionsPage() {
         sortOrder: form.sortOrder,
       };
       if (editTarget) {
-        await updateOccasion(session.token, editTarget.id, payload);
+        await updateOccasion(editTarget.id, payload);
       } else {
-        await createOccasion(session.token, payload);
+        await createOccasion(payload);
       }
       setShowModal(false);
       await load();
@@ -138,10 +138,10 @@ export default function AdminOccasionsPage() {
   }
 
   async function handleDelete() {
-    if (!session || !confirmDelete) return;
+    if (!confirmDelete) return;
     setDeleting(true);
     try {
-      await deleteOccasion(session.token, confirmDelete.id);
+      await deleteOccasion(confirmDelete.id);
       setConfirmDelete(null);
       await load();
     } catch (e) {

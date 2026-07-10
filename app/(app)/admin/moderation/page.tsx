@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { CheckCircle, XCircle } from "lucide-react";
 import {
-  getSession,
   fetchModeration,
   resolveReport,
   dismissReport,
@@ -31,33 +30,27 @@ export default function AdminModerationPage() {
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
 
-  // Read session once (getSession parses localStorage -> new object each call, which
-  // would otherwise make useCallback/useEffect deps unstable and loop).
-  const session = useMemo(() => getSession(), []);
-
   const load = useCallback(async () => {
-    if (!session) return;
     setLoading(true);
     setError("");
     try {
-      setItems(await fetchModeration(session.token));
+      setItems(await fetchModeration());
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
       else setError("Ma'lumot mavjud emas.");
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
     load();
   }, [load]);
 
   async function handleResolve(item: ModerationItem) {
-    if (!session) return;
     setBusy((b) => ({ ...b, [`${item.id}-resolve`]: true }));
     try {
-      await resolveReport(session.token, item.id);
+      await resolveReport(item.id);
       setItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, status: "RESOLVED" } : i)),
       );
@@ -69,10 +62,9 @@ export default function AdminModerationPage() {
   }
 
   async function handleDismiss(item: ModerationItem) {
-    if (!session) return;
     setBusy((b) => ({ ...b, [`${item.id}-dismiss`]: true }));
     try {
-      await dismissReport(session.token, item.id);
+      await dismissReport(item.id);
       setItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, status: "DISMISSED" } : i)),
       );

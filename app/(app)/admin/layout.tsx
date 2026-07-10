@@ -159,8 +159,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
     const s = getSession();
     if (!s || (s.role !== "SUPERADMIN" && s.role !== "MODERATOR")) {
-      clearSession();
-      router.replace("/admin/login");
+      clearSession().finally(() => router.replace("/admin/login"));
       return;
     }
     setSession(s);
@@ -170,8 +169,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // 401 listener — any page can trigger this via window event
   useEffect(() => {
     const handler = () => {
-      clearSession();
-      router.replace("/admin/login");
+      clearSession().finally(() => router.replace("/admin/login"));
     };
     window.addEventListener("admin:401", handler);
     return () => window.removeEventListener("admin:401", handler);
@@ -182,8 +180,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setMobileOpen(false);
   }, [pathname]);
 
-  function handleLogout() {
-    clearSession();
+  async function handleLogout() {
+    await clearSession();
     router.replace("/admin/login");
   }
 

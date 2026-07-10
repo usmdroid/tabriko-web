@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
-  getSession,
   fetchOrders,
   AdminOrder,
 } from "@/lib/admin-api";
@@ -49,27 +48,22 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
   const [error, setError] = useState("");
 
-  // Read session once (getSession parses localStorage -> new object each call, which
-  // would otherwise make useCallback/useEffect deps unstable and loop).
-  const session = useMemo(() => getSession(), []);
-
   const orders = statusFilter
     ? allOrders.filter((o) => o.status === statusFilter)
     : allOrders;
 
   const load = useCallback(async () => {
-    if (!session) return;
     setLoading(true);
     setError("");
     try {
-      setAllOrders(await fetchOrders(session.token));
+      setAllOrders(await fetchOrders());
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
       else setError("Ma'lumot mavjud emas.");
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
     load();

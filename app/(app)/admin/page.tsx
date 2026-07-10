@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Search } from "lucide-react";
 import {
-  getSession,
   fetchUsers,
   blockUser,
   unblockUser,
   AdminUser,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
+import { useDebouncedValue, isAbortError } from "@/lib/hooks";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Spinner } from "@/app/components/Spinner";
 
@@ -26,40 +26,40 @@ export default function AdminUsersPage() {
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
 
-  // Read session once (getSession parses localStorage -> new object each call, which
-  // would otherwise make useCallback/useEffect deps unstable and loop).
-  const session = useMemo(() => getSession(), []);
+  const debouncedSearch = useDebouncedValue(search, 300);
 
-  const load = useCallback(async () => {
-    if (!session) return;
+  const load = useCallback(async (signal: AbortSignal) => {
     setLoading(true);
     setError("");
     try {
       const params: Record<string, string> = {};
-      if (search) params.search = search;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (statusFilter) params.status = statusFilter;
-      const data = await fetchUsers(session.token, params);
+      const data = await fetchUsers(params, signal);
+      if (signal.aborted) return;
       setUsers(data);
     } catch (e) {
+      if (isAbortError(e)) return;
       if (e instanceof ApiError) setError(e.message);
       else setError("Ma'lumot mavjud emas.");
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
-  }, [session, search, statusFilter]);
+  }, [debouncedSearch, statusFilter]);
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   async function toggleBlock(user: AdminUser) {
-    if (!session) return;
     setBusy((b) => ({ ...b, [user.id]: true }));
     try {
       if (user.status === "active") {
-        await blockUser(session.token, user.id);
+        await blockUser(user.id);
       } else {
-        await unblockUser(session.token, user.id);
+        await unblockUser(user.id);
       }
       setUsers((prev) =>
         prev.map((u) =>

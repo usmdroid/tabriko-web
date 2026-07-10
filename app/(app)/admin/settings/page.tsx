@@ -48,7 +48,6 @@ function ToggleRow({ label, description, checked, onChange }: ToggleRowProps) {
 
 export default function AdminSettingsPage() {
   const router = useRouter();
-  const [token, setToken] = useState("");
   const [role, setRole] = useState<StaffRole | "">("");
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,34 +62,33 @@ export default function AdminSettingsPage() {
       router.replace("/admin");
       return;
     }
-    setToken(s.token);
     setRole(s.role);
   }, [router]);
 
   const load = useCallback(async () => {
-    if (!token) return;
+    if (!role) return;
     setLoading(true);
     setError("");
     try {
-      setSettings(await fetchSettings(token));
+      setSettings(await fetchSettings());
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [role]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   async function handleSave() {
-    if (!token || !settings) return;
+    if (!settings) return;
     setSaving(true);
     setError("");
     setSuccess(false);
     try {
-      await updateSettings(token, settings);
+      await updateSettings(settings);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (e) {

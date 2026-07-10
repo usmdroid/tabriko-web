@@ -113,8 +113,7 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
     }
     const s = getCreatorSession();
     if (!s || s.role !== "CREATOR") {
-      clearCreatorSession();
-      router.replace("/creator/login");
+      clearCreatorSession().finally(() => router.replace("/creator/login"));
       return;
     }
     setSession(s);
@@ -123,8 +122,7 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     const handler = () => {
-      clearCreatorSession();
-      router.replace("/creator/login");
+      clearCreatorSession().finally(() => router.replace("/creator/login"));
     };
     window.addEventListener("creator:401", handler);
     return () => window.removeEventListener("creator:401", handler);
@@ -134,8 +132,8 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
     setMobileOpen(false);
   }, [pathname]);
 
-  function handleLogout() {
-    clearCreatorSession();
+  async function handleLogout() {
+    await clearCreatorSession();
     router.replace("/creator/login");
   }
 

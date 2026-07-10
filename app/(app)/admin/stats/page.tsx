@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { TrendingUp, Users, Star, ShoppingBag, Clock, Shield } from "lucide-react";
-import { getSession, fetchStats, AdminStats } from "@/lib/admin-api";
+import { fetchStats, AdminStats } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
 import { Skeleton } from "@/app/components/Skeleton";
 import CountUp from "@/app/components/CountUp";
@@ -33,22 +33,17 @@ export default function AdminStatsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Read session once (getSession parses localStorage -> new object each call, which
-  // would otherwise make useCallback/useEffect deps unstable and loop).
-  const session = useMemo(() => getSession(), []);
-
   const load = useCallback(async () => {
-    if (!session) return;
     setLoading(true);
     setError("");
     try {
-      setStats(await fetchStats(session.token));
+      setStats(await fetchStats());
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
     load();

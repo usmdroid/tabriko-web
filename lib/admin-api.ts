@@ -1,4 +1,6 @@
-import { get, post, patch, put, del, ApiError } from "./api";
+import { post, ApiError } from "./api";
+import { authGet, authPost, authPatch, authPut, authDel } from "./auth-fetch";
+import { getSession as getSessionInfo, saveSession as saveSessionInfo, clearSession as clearSessionInfo, type SessionInfo } from "./session";
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -6,7 +8,6 @@ export type StaffRole = "SUPERADMIN" | "MODERATOR";
 export type CreatorTier = "STANDARD" | "RISING" | "TOP" | "CELEBRITY";
 
 export interface StaffSession {
-  token: string;
   role: StaffRole;
   name: string;
 }
@@ -259,37 +260,20 @@ function mapReport(r: BackendReportResponse): ModerationItem {
 }
 
 // ─── Session helpers ──────────────────────────────────────────────────────────
-
-const SESSION_KEY = "admin_session";
-const COOKIE_NAME = "admin_token";
+// Session info (name + role only) lives in localStorage via lib/session.ts;
+// the access/refresh tokens live in HttpOnly cookies set by /api/session/*.
 
 export function getSession(): StaffSession | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as StaffSession) : null;
-  } catch {
-    return null;
-  }
+  const info = getSessionInfo("admin");
+  return info ? { role: info.role as StaffRole, name: info.name } : null;
 }
 
-export function saveSession(session: StaffSession) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  document.cookie = `${COOKIE_NAME}=${session.token}; path=/; SameSite=Lax`;
+export function saveSession(session: StaffSession): void {
+  saveSessionInfo("admin", session as SessionInfo);
 }
 
-export function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
-  document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
-}
-
-// ─── 401 dispatcher ───────────────────────────────────────────────────────────
-
-function rethrow401(e: unknown): never {
-  if (e instanceof ApiError && e.httpStatus === 401 && typeof window !== "undefined") {
-    window.dispatchEvent(new Event("admin:401"));
-  }
-  throw e;
+export function clearSession(): Promise<void> {
+  return clearSessionInfo("admin");
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -299,17 +283,16 @@ export async function sendOtp(phone: string): Promise<void> {
 }
 
 export async function login(phone: string, password: string): Promise<StaffSession> {
-  const res = await post<{
-    accessToken: string;
-    refreshToken: string;
-    user: { id: string; phone: string; name?: string; role: string };
-  }>("/auth/login", { phone, password });
-  const { accessToken, user } = res.data;
-  return {
-    token: accessToken,
-    role: user.role as StaffRole,
-    name: user.name ?? user.phone,
-  };
+  const res = await fetch("/api/session/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone, password, scope: "admin" }),
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.data) {
+    throw new ApiError(res.status, json?.code ?? "UNKNOWN", json?.message?.text ?? "Xatolik yuz berdi.");
+  }
+  return json.data as StaffSession;
 }
 
 export async function resetPassword(phone: string, code: string, newPassword: string): Promise<void> {
@@ -319,135 +302,83 @@ export async function resetPassword(phone: string, code: string, newPassword: st
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 export async function fetchUsers(
-  token: string,
   params?: { search?: string; status?: string },
+  signal?: AbortSignal,
 ): Promise<AdminUser[]> {
-  try {
-    const entries = Object.entries(params ?? {}).filter(([, v]) => v);
-    const q = entries.length ? "?" + new URLSearchParams(Object.fromEntries(entries) as Record<string, string>).toString() : "";
-    const res = await get<BackendUserResponse[]>(`/admin/users${q}`, token);
-    return (res.data ?? []).map(mapUser);
-  } catch (e) {
-    return rethrow401(e);
-  }
+  const entries = Object.entries(params ?? {}).filter(([, v]) => v);
+  const q = entries.length ? "?" + new URLSearchParams(Object.fromEntries(entries) as Record<string, string>).toString() : "";
+  const res = await authGet<BackendUserResponse[]>("admin", `/admin/users${q}`, signal);
+  return (res.data ?? []).map(mapUser);
 }
 
-export async function blockUser(token: string, id: string) {
-  try {
-    return await post(`/admin/users/${id}/block`, {}, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function blockUser(id: string) {
+  return authPost("admin", `/admin/users/${id}/block`, {});
 }
 
-export async function unblockUser(token: string, id: string) {
-  try {
-    return await post(`/admin/users/${id}/unblock`, {}, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function unblockUser(id: string) {
+  return authPost("admin", `/admin/users/${id}/unblock`, {});
 }
 
 // ─── Creators ────────────────────────────────────────────────────────────────
 
-export async function fetchCreators(token: string): Promise<AdminCreator[]> {
-  try {
-    const res = await get<BackendCreatorResponse[]>("/admin/creators", token);
-    return (res.data ?? []).map(mapCreator);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function fetchCreators(signal?: AbortSignal): Promise<AdminCreator[]> {
+  const res = await authGet<BackendCreatorResponse[]>("admin", "/admin/creators", signal);
+  return (res.data ?? []).map(mapCreator);
 }
 
-export async function addCreator(token: string, data: AddCreatorRequest) {
-  try {
-    return await post("/admin/creators", data, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function addCreator(data: AddCreatorRequest) {
+  return authPost("admin", "/admin/creators", data);
 }
 
-export async function verifyCreator(token: string, id: string) {
-  try {
-    return await post(`/admin/creators/${id}/verify`, {}, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function verifyCreator(id: string) {
+  return authPost("admin", `/admin/creators/${id}/verify`, {});
 }
 
 // ─── Orders ──────────────────────────────────────────────────────────────────
 
-export async function fetchOrders(token: string): Promise<AdminOrder[]> {
-  try {
-    const res = await get<BackendPageResponse<BackendOrderResponse>>("/admin/orders?page=0&size=100", token);
-    return (res.data?.content ?? []).map(mapOrder);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function fetchOrders(signal?: AbortSignal): Promise<AdminOrder[]> {
+  const res = await authGet<BackendPageResponse<BackendOrderResponse>>("admin", "/admin/orders?page=0&size=100", signal);
+  return (res.data?.content ?? []).map(mapOrder);
 }
 
 // ─── Moderation ───────────────────────────────────────────────────────────────
 
-export async function fetchModeration(token: string): Promise<ModerationItem[]> {
-  try {
-    const res = await get<BackendPageResponse<BackendReportResponse>>("/moderation/reports?page=0&size=50", token);
-    return (res.data?.content ?? []).map(mapReport);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function fetchModeration(signal?: AbortSignal): Promise<ModerationItem[]> {
+  const res = await authGet<BackendPageResponse<BackendReportResponse>>("admin", "/moderation/reports?page=0&size=50", signal);
+  return (res.data?.content ?? []).map(mapReport);
 }
 
-export async function resolveReport(token: string, id: number) {
-  try {
-    return await patch(`/moderation/reports/${id}/status`, { status: "RESOLVED" }, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function resolveReport(id: number) {
+  return authPatch("admin", `/moderation/reports/${id}/status`, { status: "RESOLVED" });
 }
 
-export async function dismissReport(token: string, id: number) {
-  try {
-    return await patch(`/moderation/reports/${id}/status`, { status: "DISMISSED" }, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function dismissReport(id: number) {
+  return authPatch("admin", `/moderation/reports/${id}/status`, { status: "DISMISSED" });
 }
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 
-export async function fetchStats(token: string): Promise<AdminStats> {
-  try {
-    const res = await get<AdminStats>("/admin/stats", token);
-    return {
-      revenue: Number(res.data.revenue ?? 0),
-      activeCreators: Number(res.data.activeCreators ?? 0),
-      totalUsers: Number(res.data.totalUsers ?? 0),
-      pendingOrders: Number(res.data.pendingOrders ?? 0),
-      totalOrders: Number(res.data.totalOrders ?? 0),
-      moderationQueue: Number(res.data.moderationQueue ?? 0),
-    };
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function fetchStats(signal?: AbortSignal): Promise<AdminStats> {
+  const res = await authGet<AdminStats>("admin", "/admin/stats", signal);
+  return {
+    revenue: Number(res.data.revenue ?? 0),
+    activeCreators: Number(res.data.activeCreators ?? 0),
+    totalUsers: Number(res.data.totalUsers ?? 0),
+    pendingOrders: Number(res.data.pendingOrders ?? 0),
+    totalOrders: Number(res.data.totalOrders ?? 0),
+    moderationQueue: Number(res.data.moderationQueue ?? 0),
+  };
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
-export async function fetchSettings(token: string): Promise<PlatformSettings> {
-  try {
-    const res = await get<PlatformSettings>("/admin/settings", token);
-    return res.data;
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function fetchSettings(): Promise<PlatformSettings> {
+  const res = await authGet<PlatformSettings>("admin", "/admin/settings");
+  return res.data;
 }
 
-export async function updateSettings(token: string, data: Partial<PlatformSettings>) {
-  try {
-    return await patch("/admin/settings", data, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function updateSettings(data: Partial<PlatformSettings>) {
+  return authPatch("admin", "/admin/settings", data);
 }
 
 // ─── Admin Applications ────────────────────────────────────────────────────────
@@ -517,215 +448,115 @@ export interface AdminApplicationDetail {
 }
 
 export async function fetchApplications(
-  token: string,
   status?: string,
+  signal?: AbortSignal,
 ): Promise<AdminApplicationListItem[]> {
-  try {
-    const q = status ? `?status=${encodeURIComponent(status)}` : "";
-    const res = await get<
-      { content: AdminApplicationListItem[] } | AdminApplicationListItem[]
-    >(`/admin/applications${q}`, token);
-    const data = res.data;
-    if (Array.isArray(data)) return data;
-    if (data && !Array.isArray(data) && "content" in data) return data.content ?? [];
-    return [];
-  } catch (e) {
-    return rethrow401(e);
-  }
+  const q = status ? `?status=${encodeURIComponent(status)}` : "";
+  const res = await authGet<
+    { content: AdminApplicationListItem[] } | AdminApplicationListItem[]
+  >("admin", `/admin/applications${q}`, signal);
+  const data = res.data;
+  if (Array.isArray(data)) return data;
+  if (data && !Array.isArray(data) && "content" in data) return data.content ?? [];
+  return [];
 }
 
-export async function fetchApplication(
-  token: string,
-  id: string,
-): Promise<AdminApplicationDetail> {
-  try {
-    const res = await get<AdminApplicationDetail>(`/admin/applications/${id}`, token);
-    return res.data;
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function fetchApplication(id: string): Promise<AdminApplicationDetail> {
+  const res = await authGet<AdminApplicationDetail>("admin", `/admin/applications/${id}`);
+  return res.data;
 }
 
-export async function reviewApplication(token: string, id: string) {
-  try {
-    return await post(`/admin/applications/${id}/review`, {}, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function reviewApplication(id: string) {
+  return authPost("admin", `/admin/applications/${id}/review`, {});
 }
 
-export async function requestApplicationInfo(token: string, id: string, message: string) {
-  try {
-    return await post(`/admin/applications/${id}/request-info`, { message }, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function requestApplicationInfo(id: string, message: string) {
+  return authPost("admin", `/admin/applications/${id}/request-info`, { message });
 }
 
-export async function rejectApplication(token: string, id: string, reason: string) {
-  try {
-    return await post(`/admin/applications/${id}/reject`, { message: reason }, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function rejectApplication(id: string, reason: string) {
+  return authPost("admin", `/admin/applications/${id}/reject`, { message: reason });
 }
 
-export async function confirmInstagram(token: string, id: string) {
-  try {
-    return await post(`/admin/applications/${id}/confirm-instagram`, {}, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function confirmInstagram(id: string) {
+  return authPost("admin", `/admin/applications/${id}/confirm-instagram`, {});
 }
 
-export async function messageApplication(
-  token: string,
-  id: string,
-  text: string,
-  fileUrl?: string,
-) {
-  try {
-    return await post(
-      `/admin/applications/${id}/message`,
-      fileUrl ? { text, fileUrl } : { text },
-      token,
-    );
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function messageApplication(id: string, text: string, fileUrl?: string) {
+  return authPost("admin", `/admin/applications/${id}/message`, fileUrl ? { text, fileUrl } : { text });
 }
 
-export async function approveApplication(token: string, id: string) {
-  try {
-    return await post(`/admin/applications/${id}/approve`, {}, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function approveApplication(id: string) {
+  return authPost("admin", `/admin/applications/${id}/approve`, {});
 }
 
-export async function deleteApplication(token: string, id: string): Promise<void> {
-  try {
-    await del(`/admin/applications/${id}`, token);
-  } catch (e) {
-    rethrow401(e);
-  }
+export async function deleteApplication(id: string): Promise<void> {
+  await authDel("admin", `/admin/applications/${id}`);
 }
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 
-export async function getAdminCategories(token: string): Promise<AdminCategory[]> {
-  try {
-    const res = await get<AdminCategory[]>("/admin/categories", token);
-    return res.data ?? [];
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function getAdminCategories(signal?: AbortSignal): Promise<AdminCategory[]> {
+  const res = await authGet<AdminCategory[]>("admin", "/admin/categories", signal);
+  return res.data ?? [];
 }
 
-export async function createCategory(token: string, data: AdminCategoryRequest): Promise<AdminCategory> {
-  try {
-    const res = await post<AdminCategory>("/admin/categories", data, token);
-    return res.data;
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function createCategory(data: AdminCategoryRequest): Promise<AdminCategory> {
+  const res = await authPost<AdminCategory>("admin", "/admin/categories", data);
+  return res.data;
 }
 
-export async function updateCategory(token: string, id: number, data: AdminCategoryRequest): Promise<AdminCategory> {
-  try {
-    const res = await put<AdminCategory>(`/admin/categories/${id}`, data, token);
-    return res.data;
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function updateCategory(id: number, data: AdminCategoryRequest): Promise<AdminCategory> {
+  const res = await authPut<AdminCategory>("admin", `/admin/categories/${id}`, data);
+  return res.data;
 }
 
-export async function archiveCategory(token: string, id: number): Promise<void> {
-  try {
-    await del(`/admin/categories/${id}`, token);
-  } catch (e) {
-    rethrow401(e);
-  }
+export async function archiveCategory(id: number): Promise<void> {
+  await authDel("admin", `/admin/categories/${id}`);
 }
 
-export async function restoreCategory(token: string, id: number): Promise<void> {
-  try {
-    await post(`/admin/categories/${id}/restore`, {}, token);
-  } catch (e) {
-    rethrow401(e);
-  }
+export async function restoreCategory(id: number): Promise<void> {
+  await authPost("admin", `/admin/categories/${id}/restore`, {});
 }
 
 // ─── Occasions ─────────────────────────────────────────────────────────────────
 
-export async function fetchOccasions(token: string): Promise<AdminOccasion[]> {
-  try {
-    const res = await get<AdminOccasion[]>("/admin/occasions", token);
-    return res.data ?? [];
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function fetchOccasions(signal?: AbortSignal): Promise<AdminOccasion[]> {
+  const res = await authGet<AdminOccasion[]>("admin", "/admin/occasions", signal);
+  return res.data ?? [];
 }
 
-export async function createOccasion(token: string, data: AdminOccasionRequest): Promise<AdminOccasion> {
-  try {
-    const res = await post<AdminOccasion>("/admin/occasions", data, token);
-    return res.data;
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function createOccasion(data: AdminOccasionRequest): Promise<AdminOccasion> {
+  const res = await authPost<AdminOccasion>("admin", "/admin/occasions", data);
+  return res.data;
 }
 
-export async function updateOccasion(token: string, id: number, data: AdminOccasionRequest): Promise<AdminOccasion> {
-  try {
-    const res = await put<AdminOccasion>(`/admin/occasions/${id}`, data, token);
-    return res.data;
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function updateOccasion(id: number, data: AdminOccasionRequest): Promise<AdminOccasion> {
+  const res = await authPut<AdminOccasion>("admin", `/admin/occasions/${id}`, data);
+  return res.data;
 }
 
-export async function deleteOccasion(token: string, id: number): Promise<void> {
-  try {
-    await del(`/admin/occasions/${id}`, token);
-  } catch (e) {
-    rethrow401(e);
-  }
+export async function deleteOccasion(id: number): Promise<void> {
+  await authDel("admin", `/admin/occasions/${id}`);
 }
 
 // ─── Promotions ───────────────────────────────────────────────────────────────
 
-export async function fetchPromotions(token: string): Promise<AdminPromotion[]> {
-  try {
-    const res = await get<AdminPromotion[]>("/admin/promotions", token);
-    return res.data ?? [];
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function fetchPromotions(signal?: AbortSignal): Promise<AdminPromotion[]> {
+  const res = await authGet<AdminPromotion[]>("admin", "/admin/promotions", signal);
+  return res.data ?? [];
 }
 
-export async function createPromotion(token: string, data: AdminPromotionRequest): Promise<AdminPromotion> {
-  try {
-    const res = await post<AdminPromotion>("/admin/promotions", data, token);
-    return res.data;
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function createPromotion(data: AdminPromotionRequest): Promise<AdminPromotion> {
+  const res = await authPost<AdminPromotion>("admin", "/admin/promotions", data);
+  return res.data;
 }
 
-export async function updatePromotion(token: string, id: number, data: AdminPromotionRequest): Promise<AdminPromotion> {
-  try {
-    const res = await put<AdminPromotion>(`/admin/promotions/${id}`, data, token);
-    return res.data;
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function updatePromotion(id: number, data: AdminPromotionRequest): Promise<AdminPromotion> {
+  const res = await authPut<AdminPromotion>("admin", `/admin/promotions/${id}`, data);
+  return res.data;
 }
 
-export async function deletePromotion(token: string, id: number): Promise<void> {
-  try {
-    await del(`/admin/promotions/${id}`, token);
-  } catch (e) {
-    rethrow401(e);
-  }
+export async function deletePromotion(id: number): Promise<void> {
+  await authDel("admin", `/admin/promotions/${id}`);
 }

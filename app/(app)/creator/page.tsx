@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Plus, Trash2, AlertCircle } from "lucide-react";
 import {
-  getCreatorSession,
   getCreatorProfile,
   updateCreatorProfile,
   getPortfolio,
@@ -32,8 +31,6 @@ const MISSING_LABEL: Record<string, string> = {
 };
 
 export default function CreatorProfilePage() {
-  const session = useMemo(() => getCreatorSession(), []);
-
   const [profile, setProfile] = useState<CreatorProfile | null>(null);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,13 +53,12 @@ export default function CreatorProfilePage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!session) return;
     setLoading(true);
     setError("");
     try {
       const [p, items] = await Promise.all([
-        getCreatorProfile(session.token),
-        getPortfolio(session.token),
+        getCreatorProfile(),
+        getPortfolio(),
       ]);
       setProfile(p);
       setBio(p.bio ?? "");
@@ -75,7 +71,7 @@ export default function CreatorProfilePage() {
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -83,12 +79,11 @@ export default function CreatorProfilePage() {
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
-    if (!session) return;
     setSaving(true);
     setSaveError("");
     setSaveSuccess(false);
     try {
-      await updateCreatorProfile(session.token, {
+      await updateCreatorProfile({
         bio: bio || undefined,
         priceFrom: priceFrom ? Number(priceFrom) : undefined,
         deliveryDays: deliveryDays ? Number(deliveryDays) : undefined,
@@ -105,11 +100,11 @@ export default function CreatorProfilePage() {
 
   async function handleAddPortfolio(e: React.FormEvent) {
     e.preventDefault();
-    if (!session || !newUrl.trim()) return;
+    if (!newUrl.trim()) return;
     setAddingPortfolio(true);
     setPortfolioError("");
     try {
-      const res = await addPortfolioItem(session.token, newUrl.trim(), newCaption.trim() || undefined);
+      const res = await addPortfolioItem(newUrl.trim(), newCaption.trim() || undefined);
       setPortfolio((prev) => [...prev, res.data]);
       setNewUrl("");
       setNewCaption("");
@@ -124,10 +119,9 @@ export default function CreatorProfilePage() {
   }
 
   async function handleDeletePortfolio(id: string) {
-    if (!session) return;
     setDeletingId(id);
     try {
-      await deletePortfolioItem(session.token, id);
+      await deletePortfolioItem(id);
       setPortfolio((prev) => prev.filter((item) => item.id !== id));
       await load();
     } catch (e) {

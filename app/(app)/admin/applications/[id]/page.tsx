@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { X, ExternalLink, Trash2, RefreshCw } from "lucide-react";
 import {
-  getSession,
   fetchApplication,
   reviewApplication,
   requestApplicationInfo,
@@ -136,7 +135,6 @@ export default function AdminApplicationDetailPage() {
   const t = useTranslations("adminApplications");
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const session = useMemo(() => getSession(), []);
 
   const [detail, setDetail] = useState<AdminApplicationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,18 +144,18 @@ export default function AdminApplicationDetailPage() {
   const [modal, setModal] = useState<ModalType>(null);
 
   const load = useCallback(async () => {
-    if (!session || !params.id) return;
+    if (!params.id) return;
     setLoading(true);
     setError("");
     try {
-      setDetail(await fetchApplication(session.token, params.id));
+      setDetail(await fetchApplication(params.id));
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
       else setError(t("error"));
     } finally {
       setLoading(false);
     }
-  }, [session, params.id, t]);
+  }, [params.id, t]);
 
   useEffect(() => {
     load();
@@ -178,12 +176,12 @@ export default function AdminApplicationDetailPage() {
   }
 
   async function handleDelete() {
-    if (!session || !detail) return;
+    if (!detail) return;
     if (!confirm(t("confirmDelete"))) return;
     setBusy("delete");
     setActionError("");
     try {
-      await deleteApplication(session.token, detail.id);
+      await deleteApplication(detail.id);
       router.push("/admin/applications");
     } catch (e) {
       if (e instanceof ApiError) setActionError(e.message);
@@ -396,10 +394,10 @@ export default function AdminApplicationDetailPage() {
                 }`}>
                   {detail.verification?.instagram?.ownershipConfirmed ? t("verified") : t("notVerified")}
                 </span>
-                {!detail.verification?.instagram?.ownershipConfirmed && session && (
+                {!detail.verification?.instagram?.ownershipConfirmed && (
                   <button
                     onClick={() =>
-                      runAction("confirmIg", () => confirmInstagram(session.token, detail.id))
+                      runAction("confirmIg", () => confirmInstagram(detail.id))
                     }
                     disabled={busy === "confirmIg"}
                     className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1 text-xs text-muted hover:border-green-500 hover:text-green-600 transition-colors disabled:opacity-50"
@@ -415,14 +413,14 @@ export default function AdminApplicationDetailPage() {
       </div>
 
       {/* Actions */}
-      {status !== "APPROVED" && status !== "REJECTED" && session && (
+      {status !== "APPROVED" && status !== "REJECTED" && (
         <div className="surface-card p-5 mb-4">
           <p className="text-sm font-semibold text-primary mb-3">{t("actions")}</p>
           <div className="flex flex-wrap gap-2">
             {status === "SUBMITTED" && (
               <button
                 onClick={() =>
-                  runAction("review", () => reviewApplication(session.token, detail.id))
+                  runAction("review", () => reviewApplication(detail.id))
                 }
                 disabled={busy === "review"}
                 className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs font-medium text-muted hover:border-blue-500 hover:text-blue-600 transition-colors disabled:opacity-50"
@@ -458,7 +456,7 @@ export default function AdminApplicationDetailPage() {
             {(status === "UNDER_REVIEW" || status === "INFO_REQUESTED") && (
               <button
                 onClick={() =>
-                  runAction("approve", () => approveApplication(session.token, detail.id))
+                  runAction("approve", () => approveApplication(detail.id))
                 }
                 disabled={busy === "approve"}
                 className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-medium text-white hover:bg-green-700 transition-colors disabled:opacity-60"
@@ -472,18 +470,16 @@ export default function AdminApplicationDetailPage() {
       )}
 
       {/* Delete */}
-      {session && (
-        <div className="surface-card p-5 mb-4">
-          <button
-            onClick={handleDelete}
-            disabled={busy === "delete"}
-            className="flex items-center gap-1.5 rounded-lg border border-red-500/40 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-          >
-            {busy === "delete" ? <Spinner size={11} /> : <Trash2 size={13} />}
-            {t("actionDelete")}
-          </button>
-        </div>
-      )}
+      <div className="surface-card p-5 mb-4">
+        <button
+          onClick={handleDelete}
+          disabled={busy === "delete"}
+          className="flex items-center gap-1.5 rounded-lg border border-red-500/40 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+        >
+          {busy === "delete" ? <Spinner size={11} /> : <Trash2 size={13} />}
+          {t("actionDelete")}
+        </button>
+      </div>
 
       {/* Message thread */}
       <div className="surface-card p-5">
@@ -527,13 +523,12 @@ export default function AdminApplicationDetailPage() {
         type={modal}
         onClose={() => setModal(null)}
         onSubmit={async (text) => {
-          if (!session) return;
           if (modal === "requestInfo") {
-            await requestApplicationInfo(session.token, detail.id, text);
+            await requestApplicationInfo(detail.id, text);
           } else if (modal === "reject") {
-            await rejectApplication(session.token, detail.id, text);
+            await rejectApplication(detail.id, text);
           } else if (modal === "message") {
-            await messageApplication(session.token, detail.id, text);
+            await messageApplication(detail.id, text);
           }
           await load();
         }}

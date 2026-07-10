@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Eye, EyeOff, Upload } from "lucide-react";
 import {
-  getCreatorSession,
   getCreatorKyc,
   updateCreatorKyc,
   uploadPassportFile,
@@ -14,7 +13,6 @@ import { Skeleton } from "@/app/components/Skeleton";
 import { Spinner } from "@/app/components/Spinner";
 
 export default function CreatorKycPage() {
-  const session = useMemo(() => getCreatorSession(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [kyc, setKyc] = useState<CreatorKyc | null>(null);
@@ -40,11 +38,10 @@ export default function CreatorKycPage() {
   const [showCard, setShowCard] = useState(false);
 
   const load = useCallback(async () => {
-    if (!session) return;
     setLoading(true);
     setError("");
     try {
-      const data = await getCreatorKyc(session.token);
+      const data = await getCreatorKyc();
       setKyc(data);
       setPassportNumber(data.passportNumber ?? "");
       setPaymentCardNumber(data.paymentCardNumber ?? "");
@@ -58,7 +55,7 @@ export default function CreatorKycPage() {
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -66,12 +63,11 @@ export default function CreatorKycPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!session) return;
     setSaving(true);
     setSaveError("");
     setSaveSuccess(false);
     try {
-      await updateCreatorKyc(session.token, {
+      await updateCreatorKyc({
         passportNumber: passportNumber || undefined,
         paymentCardNumber: paymentCardNumber || undefined,
         paymentHolderName: paymentHolderName || undefined,
@@ -90,11 +86,11 @@ export default function CreatorKycPage() {
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file || !session) return;
+    if (!file) return;
     setUploading(true);
     setUploadError("");
     try {
-      const result = await uploadPassportFile(session.token, file);
+      const result = await uploadPassportFile(file);
       setUploadedUrl(result.passportFileUrl);
     } catch (err) {
       if (err instanceof ApiError) setUploadError(err.message);

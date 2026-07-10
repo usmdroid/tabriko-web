@@ -1,11 +1,12 @@
-import { get, post, put, del, ApiError, ApiResponse } from "./api";
+import { post, ApiError } from "./api";
+import { authGet, authPut, authPost, authDel, authPostForm } from "./auth-fetch";
+import { getSession as getSessionInfo, saveSession as saveSessionInfo, clearSession as clearSessionInfo, type SessionInfo } from "./session";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type CreatorRole = "CREATOR";
 
 export interface CreatorSession {
-  token: string;
   role: CreatorRole;
   name: string;
 }
@@ -36,37 +37,20 @@ export interface CreatorKyc {
 }
 
 // ─── Session helpers ──────────────────────────────────────────────────────────
-
-const SESSION_KEY = "creatorSession";
-const COOKIE_NAME = "creator_token";
+// Session info (name + role only) lives in localStorage via lib/session.ts;
+// the access/refresh tokens live in HttpOnly cookies set by /api/session/*.
 
 export function getCreatorSession(): CreatorSession | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as CreatorSession) : null;
-  } catch {
-    return null;
-  }
+  const info = getSessionInfo("creator");
+  return info ? { role: info.role as CreatorRole, name: info.name } : null;
 }
 
-export function saveCreatorSession(session: CreatorSession) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  document.cookie = `${COOKIE_NAME}=${session.token}; path=/; SameSite=Lax`;
+export function saveCreatorSession(session: CreatorSession): void {
+  saveSessionInfo("creator", session as SessionInfo);
 }
 
-export function clearCreatorSession() {
-  localStorage.removeItem(SESSION_KEY);
-  document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
-}
-
-// ─── 401 dispatcher ───────────────────────────────────────────────────────────
-
-function rethrow401(e: unknown): never {
-  if (e instanceof ApiError && e.httpStatus === 401 && typeof window !== "undefined") {
-    window.dispatchEvent(new Event("creator:401"));
-  }
-  throw e;
+export function clearCreatorSession(): Promise<void> {
+  return clearSessionInfo("creator");
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -76,17 +60,16 @@ export async function sendOtp(phone: string): Promise<void> {
 }
 
 export async function login(phone: string, password: string): Promise<CreatorSession> {
-  const res = await post<{
-    accessToken: string;
-    refreshToken: string;
-    user: { id: string; phone: string; name?: string; role: string };
-  }>("/auth/login", { phone, password });
-  const { accessToken, user } = res.data;
-  return {
-    token: accessToken,
-    role: user.role as CreatorRole,
-    name: user.name ?? user.phone,
-  };
+  const res = await fetch("/api/session/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone, password, scope: "creator" }),
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.data) {
+    throw new ApiError(res.status, json?.code ?? "UNKNOWN", json?.message?.text ?? "Xatolik yuz berdi.");
+  }
+  return json.data as CreatorSession;
 }
 
 export async function resetPassword(phone: string, code: string, newPassword: string): Promise<void> {
@@ -95,66 +78,38 @@ export async function resetPassword(phone: string, code: string, newPassword: st
 
 // ─── Profile ──────────────────────────────────────────────────────────────────
 
-export async function getCreatorProfile(token: string): Promise<CreatorProfile> {
-  try {
-    const res = await get<CreatorProfile>("/creator/profile", token);
-    return res.data;
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function getCreatorProfile(): Promise<CreatorProfile> {
+  const res = await authGet<CreatorProfile>("creator", "/creator/profile");
+  return res.data;
 }
 
-export async function updateCreatorProfile(
-  token: string,
-  data: { bio?: string; priceFrom?: number; deliveryDays?: number },
-) {
-  try {
-    return await put("/creator/profile", data, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function updateCreatorProfile(data: { bio?: string; priceFrom?: number; deliveryDays?: number }) {
+  return authPut("creator", "/creator/profile", data);
 }
 
 // ─── Portfolio ────────────────────────────────────────────────────────────────
 
-export async function getPortfolio(token: string): Promise<PortfolioItem[]> {
-  try {
-    const res = await get<PortfolioItem[]>("/creator/portfolio", token);
-    return res.data ?? [];
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function getPortfolio(): Promise<PortfolioItem[]> {
+  const res = await authGet<PortfolioItem[]>("creator", "/creator/portfolio");
+  return res.data ?? [];
 }
 
-export async function addPortfolioItem(token: string, url: string, caption?: string) {
-  try {
-    return await post<PortfolioItem>("/creator/portfolio", { url, caption }, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function addPortfolioItem(url: string, caption?: string) {
+  return authPost<PortfolioItem>("creator", "/creator/portfolio", { url, caption });
 }
 
-export async function deletePortfolioItem(token: string, id: string) {
-  try {
-    return await del(`/creator/portfolio/${id}`, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function deletePortfolioItem(id: string) {
+  return authDel("creator", `/creator/portfolio/${id}`);
 }
 
 // ─── KYC ──────────────────────────────────────────────────────────────────────
 
-export async function getCreatorKyc(token: string): Promise<CreatorKyc> {
-  try {
-    const res = await get<CreatorKyc>("/creator/kyc", token);
-    return res.data;
-  } catch (e) {
-    return rethrow401(e);
-  }
+export async function getCreatorKyc(): Promise<CreatorKyc> {
+  const res = await authGet<CreatorKyc>("creator", "/creator/kyc");
+  return res.data;
 }
 
 export async function updateCreatorKyc(
-  token: string,
   data: Partial<{
     passportNumber: string;
     paymentCardNumber: string;
@@ -163,49 +118,12 @@ export async function updateCreatorKyc(
     instagram: string;
   }>,
 ) {
-  try {
-    return await put("/creator/kyc", data, token);
-  } catch (e) {
-    return rethrow401(e);
-  }
+  return authPut("creator", "/creator/kyc", data);
 }
 
-export async function uploadPassportFile(token: string, file: File): Promise<{ passportFileUrl: string }> {
-  const API_BASE = (
-    process.env.NEXT_PUBLIC_API_BASE ?? "https://tabriko-backend.onrender.com/api/v1"
-  )
-    .trim()
-    .replace(/\/+$/, "");
-
+export async function uploadPassportFile(file: File): Promise<{ passportFileUrl: string }> {
   const formData = new FormData();
   formData.append("file", file);
-
-  let res: Response;
-  try {
-    res = await fetch(`${API_BASE}/creator/kyc/passport-file`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-  } catch {
-    throw new ApiError(0, "NETWORK_ERROR", "Tarmoq xatosi. Internet aloqasini tekshiring.");
-  }
-
-  const json: ApiResponse<CreatorKyc> = await res.json().catch(() => ({
-    success: false,
-    httpStatus: res.status,
-    code: "PARSE_ERROR",
-    message: { code: "PARSE_ERROR", text: "Javob o'qib bo'lmadi." },
-    data: { passportFileUrl: "" },
-  }));
-
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      json.code ?? "UNKNOWN",
-      json.message?.text ?? "Xatolik yuz berdi.",
-    );
-  }
-
-  return { passportFileUrl: json.data.passportFileUrl ?? "" };
+  const res = await authPostForm<CreatorKyc>("creator", "/creator/kyc/passport-file", formData);
+  return { passportFileUrl: res.data.passportFileUrl ?? "" };
 }

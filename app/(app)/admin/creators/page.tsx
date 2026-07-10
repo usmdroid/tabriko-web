@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Plus, CheckCircle, X } from "lucide-react";
 import {
-  getSession,
   fetchCreators,
   addCreator,
   verifyCreator,
@@ -50,23 +49,18 @@ export default function AdminCreatorsPage() {
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
-  // Read session once (getSession parses localStorage -> new object each call, which
-  // would otherwise make useCallback/useEffect deps unstable and loop).
-  const session = useMemo(() => getSession(), []);
-
   const load = useCallback(async () => {
-    if (!session) return;
     setLoading(true);
     setError("");
     try {
-      setCreators(await fetchCreators(session.token));
+      setCreators(await fetchCreators());
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
       else setError("Ma'lumot mavjud emas.");
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -77,10 +71,9 @@ export default function AdminCreatorsPage() {
   }, []);
 
   async function handleVerify(creator: AdminCreator) {
-    if (!session) return;
     setBusy((b) => ({ ...b, [creator.id]: true }));
     try {
-      await verifyCreator(session.token, creator.id);
+      await verifyCreator(creator.id);
       setCreators((prev) =>
         prev.map((c) => (c.id === creator.id ? { ...c, verified: true } : c)),
       );
@@ -93,7 +86,6 @@ export default function AdminCreatorsPage() {
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!session) return;
     if (!newCategoryId) {
       setAddError("Kategoriya tanlanishi shart.");
       return;
@@ -113,7 +105,7 @@ export default function AdminCreatorsPage() {
     setAdding(true);
     setAddError("");
     try {
-      await addCreator(session.token, {
+      await addCreator({
         name: newName,
         phone: newPhone,
         categoryId: newCategoryId,

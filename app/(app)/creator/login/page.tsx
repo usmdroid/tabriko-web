@@ -27,10 +27,6 @@ export default function CreatorLoginPage() {
     setLoading(true);
     try {
       const session = await login(phone, password);
-      if (session.role !== "CREATOR") {
-        setError("Kirish huquqingiz yo'q.");
-        return;
-      }
       saveCreatorSession(session);
       router.replace("/creator");
     } catch (err) {

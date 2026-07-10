@@ -27,10 +27,6 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       const session = await login(phone, password);
-      if (session.role !== "SUPERADMIN" && session.role !== "MODERATOR") {
-        setError("Kirish huquqingiz yo'q.");
-        return;
-      }
       saveSession(session);
       router.replace("/admin");
     } catch (err) {

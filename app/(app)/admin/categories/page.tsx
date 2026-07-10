@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Plus, Pencil, ArchiveX, RotateCcw, X } from "lucide-react";
 import {
-  getSession,
   getAdminCategories,
   createCategory,
   updateCategory,
@@ -37,21 +36,18 @@ export default function AdminCategoriesPage() {
   // Restore busy map
   const [restoring, setRestoring] = useState<Record<number, boolean>>({});
 
-  const session = useMemo(() => getSession(), []);
-
   const load = useCallback(async () => {
-    if (!session) return;
     setLoading(true);
     setError("");
     try {
-      setCategories(await getAdminCategories(session.token));
+      setCategories(await getAdminCategories());
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
       else setError("Ma'lumot mavjud emas.");
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -76,7 +72,6 @@ export default function AdminCategoriesPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!session) return;
     setSaving(true);
     setModalError("");
     try {
@@ -87,9 +82,9 @@ export default function AdminCategoriesPage() {
         ...(form.iconUrl?.trim() ? { iconUrl: form.iconUrl.trim() } : {}),
       };
       if (editTarget) {
-        await updateCategory(session.token, editTarget.id, payload);
+        await updateCategory(editTarget.id, payload);
       } else {
-        await createCategory(session.token, payload);
+        await createCategory(payload);
       }
       setShowModal(false);
       await load();
@@ -102,10 +97,10 @@ export default function AdminCategoriesPage() {
   }
 
   async function handleArchive() {
-    if (!session || !confirmArchive) return;
+    if (!confirmArchive) return;
     setArchiving(true);
     try {
-      await archiveCategory(session.token, confirmArchive.id);
+      await archiveCategory(confirmArchive.id);
       setConfirmArchive(null);
       await load();
     } catch (e) {
@@ -116,10 +111,9 @@ export default function AdminCategoriesPage() {
   }
 
   async function handleRestore(cat: AdminCategory) {
-    if (!session) return;
     setRestoring((r) => ({ ...r, [cat.id]: true }));
     try {
-      await restoreCategory(session.token, cat.id);
+      await restoreCategory(cat.id);
       await load();
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);

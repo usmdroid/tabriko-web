@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Eye, Check, Trash2 } from "lucide-react";
 import {
-  getSession,
   fetchApplications,
   approveApplication,
   deleteApplication,
@@ -13,6 +12,7 @@ import {
   AdminApplicationStatus,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
+import { isAbortError } from "@/lib/hooks";
 import { Skeleton } from "@/app/components/Skeleton";
 
 const ALL_STATUSES: Array<{ key: AdminApplicationStatus | "ALL"; labelKey: string }> = [
@@ -34,7 +34,6 @@ const STATUS_COLORS: Record<AdminApplicationStatus, string> = {
 
 export default function AdminApplicationsPage() {
   const t = useTranslations("adminApplications");
-  const session = useMemo(() => getSession(), []);
 
   const [filter, setFilter] = useState<AdminApplicationStatus | "ALL">("ALL");
   const [items, setItems] = useState<AdminApplicationListItem[]>([]);
@@ -42,32 +41,36 @@ export default function AdminApplicationsPage() {
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    if (!session) return;
+  const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError("");
     try {
       const status = filter === "ALL" ? undefined : filter;
-      setItems(await fetchApplications(session.token, status));
+      const data = await fetchApplications(status, signal);
+      if (signal?.aborted) return;
+      setItems(data);
     } catch (e) {
+      if (isAbortError(e)) return;
       if (e instanceof ApiError) setError(e.message);
       else setError(t("error"));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, [session, filter, t]);
+  }, [filter, t]);
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   const handleApprove = async (id: string) => {
-    if (!session || busyId) return;
+    if (busyId) return;
     if (!confirm(t("confirmApprove"))) return;
     setBusyId(id);
     setError("");
     try {
-      await approveApplication(session.token, id);
+      await approveApplication(id);
       await load();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t("error"));
@@ -77,12 +80,12 @@ export default function AdminApplicationsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!session || busyId) return;
+    if (busyId) return;
     if (!confirm(t("confirmDelete"))) return;
     setBusyId(id);
     setError("");
     try {
-      await deleteApplication(session.token, id);
+      await deleteApplication(id);
       await load();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t("error"));

@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import {
-  getSession,
   fetchPromotions,
   createPromotion,
   updatePromotion,
@@ -14,6 +13,7 @@ import {
   AdminCategory,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
+import { isAbortError } from "@/lib/hooks";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Spinner } from "@/app/components/Spinner";
 
@@ -45,29 +45,30 @@ export default function AdminPromotionsPage() {
   const [confirmDelete, setConfirmDelete] = useState<AdminPromotion | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const session = useMemo(() => getSession(), []);
-
-  const load = useCallback(async () => {
-    if (!session) return;
+  const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError("");
     try {
       const [promos, cats] = await Promise.all([
-        fetchPromotions(session.token),
-        getAdminCategories(session.token),
+        fetchPromotions(signal),
+        getAdminCategories(signal),
       ]);
+      if (signal?.aborted) return;
       setPromotions(promos);
       setCategories(cats);
     } catch (e) {
+      if (isAbortError(e)) return;
       if (e instanceof ApiError) setError(e.message);
       else setError("Ma'lumot mavjud emas.");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   const categoryName = useCallback(
@@ -105,7 +106,6 @@ export default function AdminPromotionsPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!session) return;
     setSaving(true);
     setModalError("");
     try {
@@ -120,9 +120,9 @@ export default function AdminPromotionsPage() {
         sortOrder: form.sortOrder,
       };
       if (editTarget) {
-        await updatePromotion(session.token, editTarget.id, payload);
+        await updatePromotion(editTarget.id, payload);
       } else {
-        await createPromotion(session.token, payload);
+        await createPromotion(payload);
       }
       setShowModal(false);
       await load();
@@ -135,10 +135,10 @@ export default function AdminPromotionsPage() {
   }
 
   async function handleDelete() {
-    if (!session || !confirmDelete) return;
+    if (!confirmDelete) return;
     setDeleting(true);
     try {
-      await deletePromotion(session.token, confirmDelete.id);
+      await deletePromotion(confirmDelete.id);
       setConfirmDelete(null);
       await load();
     } catch (e) {
