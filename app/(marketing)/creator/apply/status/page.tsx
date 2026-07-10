@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { RefreshCw, Send, ExternalLink } from "lucide-react";
 import { Spinner } from "@/app/components/Spinner";
 import {
@@ -12,6 +13,7 @@ import {
   ApplicationStatus,
   ApiError,
 } from "@/lib/api";
+import { sendOtp, resetPassword } from "@/lib/creator-api";
 
 const STORAGE_KEY = "creator_application";
 const CREATOR_LOGIN_PATH = "/creator/login";
@@ -34,6 +36,7 @@ const COLOR_CLASSES: Record<StatusColor, string> = {
 
 export default function CreatorApplyStatusPage() {
   const t = useTranslations("creatorApply");
+  const router = useRouter();
 
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [trackingToken, setTrackingToken] = useState<string | null>(null);
@@ -44,6 +47,14 @@ export default function CreatorApplyStatusPage() {
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
   const [replyError, setReplyError] = useState("");
+
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [setPasswordCode, setSetPasswordCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [settingPassword, setSettingPassword] = useState(false);
+  const [setPasswordError, setSetPasswordError] = useState("");
+  const [setPasswordDone, setSetPasswordDone] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -105,6 +116,42 @@ export default function CreatorApplyStatusPage() {
       else setReplyError(t("loadError"));
     } finally {
       setReplying(false);
+    }
+  }
+
+  async function handleSendPasswordOtp() {
+    if (!detail?.phone) return;
+    setSendingOtp(true);
+    setSetPasswordError("");
+    try {
+      await sendOtp(detail.phone);
+      setOtpSent(true);
+    } catch (err) {
+      if (err instanceof ApiError) setSetPasswordError(err.message);
+      else setSetPasswordError(t("loadError"));
+    } finally {
+      setSendingOtp(false);
+    }
+  }
+
+  async function handleSetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!detail?.phone || !setPasswordCode.trim()) return;
+    if (newPassword.length < 6) {
+      setSetPasswordError(t("passwordTooShort"));
+      return;
+    }
+    setSettingPassword(true);
+    setSetPasswordError("");
+    try {
+      await resetPassword(detail.phone, setPasswordCode.trim(), newPassword);
+      setSetPasswordDone(true);
+      setTimeout(() => router.push(CREATOR_LOGIN_PATH), 1500);
+    } catch (err) {
+      if (err instanceof ApiError) setSetPasswordError(err.message);
+      else setSetPasswordError(t("loadError"));
+    } finally {
+      setSettingPassword(false);
     }
   }
 
@@ -181,13 +228,64 @@ export default function CreatorApplyStatusPage() {
             <div className="mt-4 rounded-xl bg-green-50 dark:bg-green-900/20 p-4">
               <p className="font-semibold text-green-700 dark:text-green-400 mb-1">{t("approvedTitle")}</p>
               <p className="text-sm text-green-700/80 dark:text-green-400/80 mb-3">{t("approvedText")}</p>
-              <Link
-                href={CREATOR_LOGIN_PATH}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors"
-              >
-                {t("setPasswordBtn")}
-                <ExternalLink size={13} />
-              </Link>
+
+              {!detail.phone && (
+                <p className="text-sm text-red-500">{t("setPasswordNoPhone")}</p>
+              )}
+
+              {detail.phone && !otpSent && !setPasswordDone && (
+                <button
+                  type="button"
+                  onClick={handleSendPasswordOtp}
+                  disabled={sendingOtp}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors disabled:opacity-60"
+                >
+                  {sendingOtp ? <Spinner size={13} /> : <ExternalLink size={13} />}
+                  {sendingOtp ? t("setPasswordSending") : t("setPasswordBtn")}
+                </button>
+              )}
+
+              {setPasswordError && !setPasswordDone && (
+                <p className="mt-2 text-xs text-red-500">{setPasswordError}</p>
+              )}
+
+              {otpSent && !setPasswordDone && (
+                <div className="mt-1">
+                  <p className="text-xs text-green-700/80 dark:text-green-400/80 mb-3">
+                    {t("setPasswordOtpSent")}
+                  </p>
+                  <form onSubmit={handleSetPassword} className="flex flex-col gap-3">
+                    <input
+                      required
+                      value={setPasswordCode}
+                      onChange={(e) => setSetPasswordCode(e.target.value)}
+                      placeholder={t("setPasswordCodeLabel")}
+                      className="rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-primary focus:outline-none focus:border-accent"
+                    />
+                    <input
+                      required
+                      type="password"
+                      minLength={6}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder={t("newPasswordLabel")}
+                      className="rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-primary focus:outline-none focus:border-accent"
+                    />
+                    <button
+                      type="submit"
+                      disabled={settingPassword || !setPasswordCode.trim() || newPassword.length < 6}
+                      className="flex items-center justify-center gap-2 self-end rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors disabled:opacity-60"
+                    >
+                      {settingPassword ? <Spinner size={13} /> : null}
+                      {settingPassword ? t("setPasswordSubmitting") : t("setPasswordSubmit")}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {setPasswordDone && (
+                <p className="text-sm text-green-700 dark:text-green-400">{t("setPasswordSuccess")}</p>
+              )}
             </div>
           )}
 
