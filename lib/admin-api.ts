@@ -21,13 +21,23 @@ export interface AdminUser {
   createdAt: string;
 }
 
+export interface AdminCreatorContact {
+  id: string;
+  phone: string;
+  label: string | null;
+  createdAt: string;
+}
+
 export interface AdminCreator {
   id: string;
   name: string;
+  phone: string;
   category: string;
   verified: boolean;
   flag?: "top" | "exclusive";
   tier?: CreatorTier;
+  contacts: AdminCreatorContact[];
+  accountStatus?: string;
 }
 
 export interface AddCreatorRequest {
@@ -147,11 +157,14 @@ export interface PlatformSettings {
 interface BackendCreatorResponse {
   id: string;
   name: string;
+  phone: string;
   category?: { id: number; name: string };
   verified: boolean;
   top: boolean;
   exclusive: boolean;
   tier?: string;
+  status?: string;
+  contacts?: AdminCreatorContact[];
 }
 
 interface BackendOrderResponse {
@@ -218,10 +231,13 @@ function mapCreator(c: BackendCreatorResponse): AdminCreator {
   return {
     id: c.id,
     name: c.name,
+    phone: c.phone ?? "—",
     category: c.category?.name ?? "—",
     verified: c.verified,
     flag: c.top ? "top" : c.exclusive ? "exclusive" : undefined,
     tier: (c.tier as CreatorTier) ?? undefined,
+    contacts: c.contacts ?? [],
+    accountStatus: c.status,
   };
 }
 
@@ -333,6 +349,25 @@ export async function addCreator(data: AddCreatorRequest) {
 
 export async function verifyCreator(id: string) {
   return authPost("admin", `/admin/creators/${id}/verify`, {});
+}
+
+export async function fetchCreator(id: string, signal?: AbortSignal): Promise<AdminCreator> {
+  const res = await authGet<BackendCreatorResponse>("admin", `/admin/creators/${id}`, signal);
+  return mapCreator(res.data as BackendCreatorResponse);
+}
+
+export async function fetchCreatorDetail(id: string, signal?: AbortSignal): Promise<AdminCreator> {
+  const res = await authGet<BackendCreatorResponse>("admin", `/admin/creators/${id}`, signal);
+  return mapCreator(res.data as BackendCreatorResponse);
+}
+
+export async function addCreatorContact(id: string, data: { phone: string; label?: string }): Promise<AdminCreatorContact> {
+  const res = await authPost<AdminCreatorContact>("admin", `/admin/creators/${id}/contacts`, data);
+  return res.data;
+}
+
+export async function deleteCreatorContact(id: string, contactId: string): Promise<void> {
+  await authDel("admin", `/admin/creators/${id}/contacts/${contactId}`);
 }
 
 // ─── Orders ──────────────────────────────────────────────────────────────────

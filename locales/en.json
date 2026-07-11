@@ -238,6 +238,31 @@
     "actions": "Actions",
     "fileLabel": "File"
   },
+  "adminCreators": {
+    "detailTitle": "Creator detail",
+    "backToList": "← Creators",
+    "colName": "Name",
+    "colPhone": "Main phone",
+    "colCategory": "Category",
+    "colLevel": "Level",
+    "colTier": "Level",
+    "colStatus": "Status",
+    "verified": "Verified",
+    "notVerified": "Not verified",
+    "contactsTitle": "Contact numbers",
+    "addContact": "Add number",
+    "phoneLabel": "Phone number",
+    "labelPlaceholder": "Label (e.g. Administrator)",
+    "contactNote": "Additional contact numbers for this creator.",
+    "deleteContact": "Delete this contact?",
+    "confirmDeleteContact": "Delete this contact number?",
+    "actionDelete": "Delete",
+    "labelLabel": "Label (optional)",
+    "noContacts": "No contact numbers",
+    "cancel": "Cancel",
+    "reload": "Refresh",
+    "error": "Something went wrong."
+  },
   "admin": {
     "nav": {
       "users": "Users",

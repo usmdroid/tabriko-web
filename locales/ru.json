@@ -175,6 +175,28 @@
     "loading": "Загрузка…",
     "fileLabel": "Файл"
   },
+  "adminCreators": {
+    "detailTitle": "Детали криейтора",
+    "backToList": "← Криейторы",
+    "colName": "Имя",
+    "colCategory": "Категория",
+    "colTier": "Уровень",
+    "colStatus": "Статус",
+    "colPhone": "Основной телефон",
+    "contactsTitle": "Контактные номера",
+    "addContact": "Добавить номер",
+    "phoneLabel": "Номер телефона",
+    "labelLabel": "Примечание (необязательно)",
+    "noContacts": "Контактных номеров нет",
+    "actionDelete": "Удалить",
+    "confirmDeleteContact": "Удалить этот контактный номер?",
+    "cancel": "Отмена",
+    "error": "Произошла ошибка.",
+    "loading": "Загрузка…",
+    "reload": "Обновить",
+    "verified": "Подтверждено",
+    "notVerified": "Не подтверждено"
+  },
   "adminApplications": {
     "pageTitle": "Заявки",
     "all": "Все",

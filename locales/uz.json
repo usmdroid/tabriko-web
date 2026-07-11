@@ -175,6 +175,28 @@
     "loading": "Yuklanmoqda…",
     "fileLabel": "Fayl"
   },
+  "adminCreators": {
+    "detailTitle": "Kreator tafsiloti",
+    "backToList": "← Kreatorlar",
+    "colName": "Ism",
+    "colCategory": "Kategoriya",
+    "colTier": "Daraja",
+    "colStatus": "Holat",
+    "colPhone": "Asosiy telefon",
+    "contactsTitle": "Kontakt raqamlar",
+    "addContact": "Raqam qo'shish",
+    "phoneLabel": "Telefon raqam",
+    "labelLabel": "Izoh (ixtiyoriy)",
+    "noContacts": "Kontakt raqamlar yo'q",
+    "actionDelete": "O'chirish",
+    "confirmDeleteContact": "Bu kontakt raqamni o'chirishni tasdiqlaysizmi?",
+    "cancel": "Bekor qilish",
+    "error": "Xatolik yuz berdi.",
+    "loading": "Yuklanmoqda…",
+    "reload": "Yangilash",
+    "verified": "Tasdiqlangan",
+    "notVerified": "Tasdiqlanmagan"
+  },
   "adminApplications": {
     "pageTitle": "Arizalar",
     "all": "Barchasi",

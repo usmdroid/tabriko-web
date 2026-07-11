@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { Plus, CheckCircle, X } from "lucide-react";
 import {
   fetchCreators,
@@ -184,7 +185,11 @@ export default function AdminCreatorsPage() {
                     key={creator.id}
                     className="border-b border-line last:border-0 hover:bg-card/50 transition-colors"
                   >
-                    <td className="px-4 py-3 font-medium text-primary">{creator.name}</td>
+                    <td className="px-4 py-3 font-medium text-primary">
+                      <Link href={`/admin/creators/${creator.id}`} className="hover:text-accent transition-colors">
+                        {creator.name}
+                      </Link>
+                    </td>
                     <td className="px-4 py-3 text-muted">{creator.category}</td>
                     <td className="px-4 py-3">
                       {creator.tier ? (
@@ -216,16 +221,24 @@ export default function AdminCreatorsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {!creator.verified && (
-                        <button
-                          onClick={() => handleVerify(creator)}
-                          disabled={busy[creator.id]}
-                          className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-green-500 hover:text-green-600 transition-colors disabled:opacity-50"
+                      <div className="flex items-center gap-2">
+                        {!creator.verified && (
+                          <button
+                            onClick={() => handleVerify(creator)}
+                            disabled={busy[creator.id]}
+                            className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-green-500 hover:text-green-600 transition-colors disabled:opacity-50"
+                          >
+                            {busy[creator.id] ? <Spinner size={11} /> : <CheckCircle size={11} />}
+                            Tasdiqlash
+                          </button>
+                        )}
+                        <Link
+                          href={`/admin/creators/${creator.id}`}
+                          className="rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-accent/50 hover:text-accent transition-colors"
                         >
-                          {busy[creator.id] ? <Spinner size={11} /> : <CheckCircle size={11} />}
-                          Tasdiqlash
-                        </button>
-                      )}
+                          Batafsil
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))
