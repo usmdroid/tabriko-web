@@ -313,7 +313,7 @@ function mapUserDetail(u: BackendUserDetailResponse): AdminUserDetail {
     name: u.name ?? "—",
     phone: u.phone ?? "—",
     role: u.role ?? "—",
-    status: (u.status as AdminUserDetail["status"]) ?? "active",
+    status: u.status?.toLowerCase() === "active" ? "active" : "blocked",
     createdAt: formatDate(u.createdAt),
     devices: (u.devices ?? []).map((d) => ({
       id: d.id,

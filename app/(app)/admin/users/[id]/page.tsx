@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, X } from "lucide-react";
 import {
   fetchUser,
   sendUserNotification,
@@ -32,6 +32,7 @@ export default function AdminUserDetailPage() {
   const [sendError, setSendError] = useState("");
   const [sendSuccess, setSendSuccess] = useState(false);
   const [blockingId, setBlockingId] = useState<string | null>(null);
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
 
   const load = useCallback(async () => {
     if (!params.id) return;
@@ -50,6 +51,16 @@ export default function AdminUserDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!showNotifyModal) {
+      setNotifyTitle("");
+      setNotifyBody("");
+      setMode("all");
+      setSendError("");
+      setSendSuccess(false);
+    }
+  }, [showNotifyModal]);
 
   function toggleDevice(id: string) {
     setSelectedIds((prev) => {
@@ -101,6 +112,7 @@ export default function AdminUserDetailPage() {
       setSendSuccess(true);
       setNotifyTitle("");
       setNotifyBody("");
+      setShowNotifyModal(false);
       setTimeout(() => setSendSuccess(false), 3000);
     } catch (e) {
       if (e instanceof ApiError) setSendError(e.message);
@@ -143,6 +155,7 @@ export default function AdminUserDetailPage() {
     sending || (mode === "selected" && selectedIds.size === 0);
 
   return (
+    <>
     <div className="max-w-2xl">
       <Link
         href="/admin"
@@ -282,86 +295,112 @@ export default function AdminUserDetailPage() {
         )}
       </div>
 
-      {/* Notification form card */}
-      <div className="surface-card p-5">
-        <p className="text-sm font-semibold text-primary mb-4">{t("notifyTitle")}</p>
-        <form onSubmit={handleSend} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted">{t("notifyTitleField")}</label>
-            <input
-              type="text"
-              required
-              value={notifyTitle}
-              onChange={(e) => setNotifyTitle(e.target.value)}
-              className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted">{t("notifyBody")}</label>
-            <textarea
-              required
-              rows={4}
-              value={notifyBody}
-              onChange={(e) => setNotifyBody(e.target.value)}
-              className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent resize-none"
-            />
-          </div>
-
-          <div className="flex items-center gap-4 text-sm">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="notifyMode"
-                value="all"
-                checked={mode === "all"}
-                onChange={() => setMode("all")}
-                className="accent-accent"
-              />
-              <span className="text-primary">{t("sendToAll")}</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="notifyMode"
-                value="selected"
-                checked={mode === "selected"}
-                onChange={() => setMode("selected")}
-                className="accent-accent"
-              />
-              <span className="text-primary">{t("sendToSelected")}</span>
-            </label>
-          </div>
-
-          {mode === "selected" && selectedIds.size === 0 && (
-            <p className="text-xs text-amber-600 dark:text-amber-400">
-              {t("selectDevicesHint")}
-            </p>
-          )}
-
-          {sendError && (
-            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
-              {sendError}
-            </p>
-          )}
-
-          {sendSuccess && (
-            <p className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
-              {t("sendSuccess")}
-            </p>
-          )}
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={sendDisabled}
-              className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-hover transition-colors disabled:opacity-60"
-            >
-              {sending && <Spinner size={13} />}
-              {t("sendBtn")}
-            </button>
-          </div>
-        </form>
+      <div className="flex justify-end mb-4">
+        <button
+          type="button"
+          onClick={() => setShowNotifyModal(true)}
+          className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-hover transition-colors"
+        >
+          {t("notifyTitle")}
+        </button>
       </div>
     </div>
+
+    {showNotifyModal && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        onClick={() => setShowNotifyModal(false)}
+      >
+        <div
+          className="surface-card w-full max-w-lg p-6 flex flex-col gap-4 mx-4"
+          style={{ animation: "modalIn 200ms ease forwards" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-primary">{t("notifyTitle")}</p>
+            <button type="button" onClick={() => setShowNotifyModal(false)} className="text-muted hover:text-primary">
+              <X size={18} />
+            </button>
+          </div>
+          <form onSubmit={handleSend} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted">{t("notifyTitleField")}</label>
+              <input
+                type="text"
+                required
+                value={notifyTitle}
+                onChange={(e) => setNotifyTitle(e.target.value)}
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted">{t("notifyBody")}</label>
+              <textarea
+                required
+                rows={4}
+                value={notifyBody}
+                onChange={(e) => setNotifyBody(e.target.value)}
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent resize-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-4 text-sm">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="notifyMode"
+                  value="all"
+                  checked={mode === "all"}
+                  onChange={() => setMode("all")}
+                  className="accent-accent"
+                />
+                <span className="text-primary">{t("sendToAll")}</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="notifyMode"
+                  value="selected"
+                  checked={mode === "selected"}
+                  onChange={() => setMode("selected")}
+                  className="accent-accent"
+                />
+                <span className="text-primary">{t("sendToSelected")}</span>
+              </label>
+            </div>
+
+            {mode === "selected" && selectedIds.size === 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                {t("selectDevicesHint")}
+              </p>
+            )}
+
+            {sendError && (
+              <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
+                {sendError}
+              </p>
+            )}
+
+            {sendSuccess && (
+              <p className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
+                {t("sendSuccess")}
+              </p>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={sendDisabled}
+                className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-hover transition-colors disabled:opacity-60"
+              >
+                {sending && <Spinner size={13} />}
+                {t("sendBtn")}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+  </>
   );
 }

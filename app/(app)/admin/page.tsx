@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Search } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   fetchUsers,
   blockUser,
@@ -20,6 +21,7 @@ const STATUS_LABEL: Record<AdminUser["status"], string> = {
 };
 
 export default function AdminUsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -147,7 +149,8 @@ export default function AdminUsersPage() {
                 users.map((user) => (
                   <tr
                     key={user.id}
-                    className="border-b border-line last:border-0 hover:bg-card/50 transition-colors"
+                    className="border-b border-line last:border-0 hover:bg-card/50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/admin/users/${user.id}`)}
                   >
                     <td className="px-4 py-3 font-medium text-primary">{user.name}</td>
                     <td className="px-4 py-3 text-muted">{user.phone}</td>
@@ -167,12 +170,13 @@ export default function AdminUsersPage() {
                       <div className="flex items-center gap-2">
                         <Link
                           href={`/admin/users/${user.id}`}
+                          onClick={(e) => e.stopPropagation()}
                           className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted hover:border-accent hover:text-accent transition-colors"
                         >
                           Batafsil
                         </Link>
                         <button
-                          onClick={() => toggleBlock(user)}
+                          onClick={(e) => { e.stopPropagation(); toggleBlock(user); }}
                           disabled={busy[user.id]}
                           className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
                         >
