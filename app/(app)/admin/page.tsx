@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Search } from "lucide-react";
+import Link from "next/link";
 import {
   fetchUsers,
   blockUser,
@@ -122,7 +123,7 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-3 font-medium">Telefon</th>
                 <th className="px-4 py-3 font-medium">Holati</th>
                 <th className="px-4 py-3 font-medium">Ro&apos;yxatdan o&apos;tgan</th>
-                <th className="px-4 py-3 font-medium">Amal</th>
+                <th className="px-4 py-3 font-medium">Amallar</th>
               </tr>
             </thead>
             <tbody>
@@ -163,14 +164,22 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-3 text-muted">{user.createdAt}</td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleBlock(user)}
-                        disabled={busy[user.id]}
-                        className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
-                      >
-                        {busy[user.id] && <Spinner size={12} />}
-                        {user.status === "active" ? "Bloklash" : "Faollashtirish"}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/admin/users/${user.id}`}
+                          className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted hover:border-accent hover:text-accent transition-colors"
+                        >
+                          Batafsil
+                        </Link>
+                        <button
+                          onClick={() => toggleBlock(user)}
+                          disabled={busy[user.id]}
+                          className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
+                        >
+                          {busy[user.id] && <Spinner size={12} />}
+                          {user.status === "active" ? "Bloklash" : "Faollashtirish"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

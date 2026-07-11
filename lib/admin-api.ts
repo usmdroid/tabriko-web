@@ -21,6 +21,25 @@ export interface AdminUser {
   createdAt: string;
 }
 
+export interface AdminDevice {
+  id: string;
+  platform: string;
+  appVersion: string;
+  deviceName: string;
+  osVersion: string;
+  updatedAt: string;
+}
+
+export interface AdminUserDetail {
+  id: string;
+  name: string;
+  phone: string;
+  role: string;
+  status: "active" | "blocked";
+  createdAt: string;
+  devices: AdminDevice[];
+}
+
 export interface AdminCreatorContact {
   id: string;
   phone: string;
@@ -204,6 +223,23 @@ interface BackendUserResponse {
   createdAt: string;
 }
 
+interface BackendUserDetailResponse {
+  id: string;
+  name: string;
+  phone: string;
+  role?: string;
+  status: string;
+  createdAt: string;
+  devices?: Array<{
+    id: string;
+    platform?: string;
+    appVersion?: string;
+    deviceName?: string;
+    osVersion?: string;
+    updatedAt?: string;
+  }>;
+}
+
 // ─── Mappers ──────────────────────────────────────────────────────────────────
 
 function formatDate(raw: string | number | null | undefined): string {
@@ -261,6 +297,25 @@ function mapUser(u: BackendUserResponse): AdminUser {
     phone: u.phone ?? "—",
     status: (u.status as AdminUser["status"]) ?? "active",
     createdAt: formatDate(u.createdAt),
+  };
+}
+
+function mapUserDetail(u: BackendUserDetailResponse): AdminUserDetail {
+  return {
+    id: u.id,
+    name: u.name ?? "—",
+    phone: u.phone ?? "—",
+    role: u.role ?? "—",
+    status: (u.status as AdminUserDetail["status"]) ?? "active",
+    createdAt: formatDate(u.createdAt),
+    devices: (u.devices ?? []).map((d) => ({
+      id: d.id,
+      platform: d.platform ?? "—",
+      appVersion: d.appVersion ?? "—",
+      deviceName: d.deviceName ?? "—",
+      osVersion: d.osVersion ?? "—",
+      updatedAt: formatDate(d.updatedAt),
+    })),
   };
 }
 
@@ -334,6 +389,21 @@ export async function blockUser(id: string) {
 
 export async function unblockUser(id: string) {
   return authPost("admin", `/admin/users/${id}/unblock`, {});
+}
+
+export async function fetchUser(
+  id: string,
+  signal?: AbortSignal,
+): Promise<AdminUserDetail> {
+  const res = await authGet<BackendUserDetailResponse>("admin", `/admin/users/${id}`, signal);
+  return mapUserDetail(res.data as BackendUserDetailResponse);
+}
+
+export async function sendUserNotification(
+  id: string,
+  payload: { title: string; body: string; deviceIds?: string[] },
+): Promise<void> {
+  await authPost("admin", `/admin/users/${id}/notify`, payload);
 }
 
 // ─── Creators ────────────────────────────────────────────────────────────────
