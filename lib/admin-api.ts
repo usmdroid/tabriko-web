@@ -28,6 +28,9 @@ export interface AdminDevice {
   deviceName: string;
   osVersion: string;
   updatedAt: string;
+  rooted: boolean;
+  genuine: boolean;
+  blocked: boolean;
 }
 
 export interface AdminUserDetail {
@@ -169,6 +172,7 @@ export interface PlatformSettings {
   ordersOpen: boolean;
   maintenanceMode: boolean;
   registrationOpen: boolean;
+  blockRootedDevices: boolean;
 }
 
 // ─── Backend response shapes ──────────────────────────────────────────────────
@@ -237,6 +241,9 @@ interface BackendUserDetailResponse {
     deviceName?: string;
     osVersion?: string;
     updatedAt?: string;
+    rooted?: boolean;
+    genuine?: boolean;
+    blocked?: boolean;
   }>;
 }
 
@@ -315,6 +322,9 @@ function mapUserDetail(u: BackendUserDetailResponse): AdminUserDetail {
       deviceName: d.deviceName ?? "—",
       osVersion: d.osVersion ?? "—",
       updatedAt: formatDate(d.updatedAt),
+      rooted: d.rooted ?? false,
+      genuine: d.genuine ?? true,
+      blocked: d.blocked ?? false,
     })),
   };
 }
@@ -404,6 +414,14 @@ export async function sendUserNotification(
   payload: { title: string; body: string; deviceIds?: string[] },
 ): Promise<void> {
   await authPost("admin", `/admin/users/${id}/notify`, payload);
+}
+
+export async function blockDevice(deviceId: string) {
+  return authPost("admin", `/admin/devices/${deviceId}/block`, {});
+}
+
+export async function unblockDevice(deviceId: string) {
+  return authPost("admin", `/admin/devices/${deviceId}/unblock`, {});
 }
 
 // ─── Creators ────────────────────────────────────────────────────────────────

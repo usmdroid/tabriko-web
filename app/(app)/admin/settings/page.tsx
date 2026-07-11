@@ -150,6 +150,12 @@ export default function AdminSettingsPage() {
               checked={settings.maintenanceMode}
               onChange={(v) => update("maintenanceMode", v)}
             />
+            <ToggleRow
+              label="Root/Jailbreak qurilmalarni chekla"
+              description="Yoqilsa, root yoki jailbreak qurilmalar tizimga kira olmaydi"
+              checked={settings.blockRootedDevices}
+              onChange={(v) => update("blockRootedDevices", v)}
+            />
 
             <div className="mt-6 flex justify-end">
               <button

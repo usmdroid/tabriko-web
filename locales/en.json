@@ -264,7 +264,14 @@
     "selectDevicesHint": "Select at least one device",
     "sendBtn": "Send",
     "confirmSend": "Confirm sending the notification?",
-    "sendSuccess": "Notification sent successfully"
+    "sendSuccess": "Notification sent successfully",
+    "integrity": "Integrity",
+    "rooted": "Root/Jailbreak",
+    "clean": "Clean",
+    "blockDevice": "Block",
+    "unblockDevice": "Unblock",
+    "blockDeviceConfirm": "Block this device?",
+    "unblockDeviceConfirm": "Unblock this device?"
   },
   "adminCreators": {
     "detailTitle": "Creator detail",

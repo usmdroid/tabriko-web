@@ -8,7 +8,10 @@ import { RefreshCw } from "lucide-react";
 import {
   fetchUser,
   sendUserNotification,
+  blockDevice,
+  unblockDevice,
   AdminUserDetail,
+  AdminDevice,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
 import { Spinner } from "@/app/components/Spinner";
@@ -28,6 +31,7 @@ export default function AdminUserDetailPage() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [sendSuccess, setSendSuccess] = useState(false);
+  const [blockingId, setBlockingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!params.id) return;
@@ -62,6 +66,20 @@ export default function AdminUserDetailPage() {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(detail.devices.map((d) => d.id)));
+    }
+  }
+
+  async function handleBlockToggle(device: AdminDevice) {
+    if (!window.confirm(device.blocked ? t("unblockDeviceConfirm") : t("blockDeviceConfirm"))) return;
+    setBlockingId(device.id);
+    try {
+      if (device.blocked) await unblockDevice(device.id);
+      else await blockDevice(device.id);
+      await load();
+    } catch {
+      // silent — load() will restore state
+    } finally {
+      setBlockingId(null);
     }
   }
 
@@ -212,7 +230,9 @@ export default function AdminUserDetailPage() {
                   <th className="pb-2 pr-3 font-medium">{t("osVersion")}</th>
                   <th className="pb-2 pr-3 font-medium">{t("appVersion")}</th>
                   <th className="pb-2 pr-3 font-medium">{t("platform")}</th>
-                  <th className="pb-2 font-medium">{t("lastUpdated")}</th>
+                  <th className="pb-2 pr-3 font-medium">{t("lastUpdated")}</th>
+                  <th className="pb-2 pr-3 font-medium">{t("integrity")}</th>
+                  <th className="pb-2 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
@@ -233,7 +253,27 @@ export default function AdminUserDetailPage() {
                     <td className="py-2 pr-3 text-muted">{d.osVersion}</td>
                     <td className="py-2 pr-3 text-muted">{d.appVersion}</td>
                     <td className="py-2 pr-3 text-muted">{d.platform}</td>
-                    <td className="py-2 text-muted">{d.updatedAt}</td>
+                    <td className="py-2 pr-3 text-muted">{d.updatedAt}</td>
+                    <td className="py-2 pr-3">
+                      {(d.rooted || d.genuine === false) ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                          {t("rooted")}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                          {t("clean")}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2">
+                      <button
+                        disabled={blockingId === d.id}
+                        onClick={() => handleBlockToggle(d)}
+                        className="text-xs px-2 py-1 rounded border border-line hover:bg-surface transition-colors"
+                      >
+                        {blockingId === d.id ? '…' : d.blocked ? t("unblockDevice") : t("blockDevice")}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

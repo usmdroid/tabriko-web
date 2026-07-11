@@ -201,7 +201,14 @@
     "selectDevicesHint": "Выберите хотя бы одно устройство",
     "sendBtn": "Отправить",
     "confirmSend": "Подтверждаете отправку уведомления?",
-    "sendSuccess": "Уведомление успешно отправлено"
+    "sendSuccess": "Уведомление успешно отправлено",
+    "integrity": "Целостность",
+    "rooted": "Root/Jailbreak",
+    "clean": "Чисто",
+    "blockDevice": "Заблокировать",
+    "unblockDevice": "Разблокировать",
+    "blockDeviceConfirm": "Заблокировать устройство?",
+    "unblockDeviceConfirm": "Разблокировать устройство?"
   },
   "adminCreators": {
     "detailTitle": "Детали криейтора",

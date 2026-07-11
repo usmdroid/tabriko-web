@@ -201,7 +201,14 @@
     "selectDevicesHint": "Kamida bitta qurilma tanlang",
     "sendBtn": "Yuborish",
     "confirmSend": "Xabarnomani yuborishni tasdiqlaysizmi?",
-    "sendSuccess": "Xabarnoma muvaffaqiyatli yuborildi"
+    "sendSuccess": "Xabarnoma muvaffaqiyatli yuborildi",
+    "integrity": "Butunlik",
+    "rooted": "Root/Jailbreak",
+    "clean": "Toza",
+    "blockDevice": "Bloklash",
+    "unblockDevice": "Blokdan chiqarish",
+    "blockDeviceConfirm": "Qurilmani bloklashni tasdiqlaysizmi?",
+    "unblockDeviceConfirm": "Qurilmani blokdan chiqarishni tasdiqlaysizmi?"
   },
   "adminCreators": {
     "detailTitle": "Kreator tafsiloti",
