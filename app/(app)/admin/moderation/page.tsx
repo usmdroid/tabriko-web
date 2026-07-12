@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { CheckCircle, XCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   fetchModeration,
   resolveReport,
@@ -18,13 +19,9 @@ const STATUS_BADGE: Record<ModerationItem["status"], string> = {
   DISMISSED: "bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400",
 };
 
-const STATUS_LABEL: Record<ModerationItem["status"], string> = {
-  OPEN: "Ochiq",
-  RESOLVED: "Hal qilindi",
-  DISMISSED: "Rad etildi",
-};
-
 export default function AdminModerationPage() {
+  const t = useTranslations("adminModeration");
+
   const [items, setItems] = useState<ModerationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
@@ -37,11 +34,11 @@ export default function AdminModerationPage() {
       setItems(await fetchModeration());
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
-      else setError("Ma'lumot mavjud emas.");
+      else setError(t("error"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -79,7 +76,7 @@ export default function AdminModerationPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-primary mb-4">Moderatsiya</h1>
+      <h1 className="text-xl font-semibold text-primary mb-4">{t("pageTitle")}</h1>
 
       {error && (
         <p className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
@@ -90,13 +87,13 @@ export default function AdminModerationPage() {
       {!loading && items.length === 0 && (
         <div className="surface-card flex flex-col items-center justify-center py-16 text-muted">
           <CheckCircle size={32} className="mb-3 text-green-500" />
-          <p className="text-sm font-medium">Moderatsiya uchun element yo&apos;q</p>
-          <p className="text-xs mt-1">Barcha shikoyatlar ko&apos;rib chiqilgan</p>
+          <p className="text-sm font-medium">{t("emptyTitle")}</p>
+          <p className="text-xs mt-1">{t("emptyDesc")}</p>
         </div>
       )}
 
       {!loading && items.length > 0 && openCount === 0 && (
-        <p className="mb-4 text-sm text-muted">Barcha shikoyatlar ko&apos;rib chiqilgan.</p>
+        <p className="mb-4 text-sm text-muted">{t("allReviewed")}</p>
       )}
 
       {(loading || items.length > 0) && (
@@ -105,12 +102,12 @@ export default function AdminModerationPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs text-muted">
-                  <th className="px-4 py-3 font-medium">Tur</th>
-                  <th className="px-4 py-3 font-medium">Maqsad</th>
-                  <th className="px-4 py-3 font-medium">Sabab</th>
-                  <th className="px-4 py-3 font-medium">Holati</th>
-                  <th className="px-4 py-3 font-medium">Sana</th>
-                  <th className="px-4 py-3 font-medium">Amallar</th>
+                  <th className="px-4 py-3 font-medium">{t("colType")}</th>
+                  <th className="px-4 py-3 font-medium">{t("colTarget")}</th>
+                  <th className="px-4 py-3 font-medium">{t("colReason")}</th>
+                  <th className="px-4 py-3 font-medium">{t("colStatus")}</th>
+                  <th className="px-4 py-3 font-medium">{t("colDate")}</th>
+                  <th className="px-4 py-3 font-medium">{t("colActions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -137,7 +134,7 @@ export default function AdminModerationPage() {
                       <td className="px-4 py-3 text-muted max-w-[180px] truncate">{item.reason}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[item.status]}`}>
-                          {STATUS_LABEL[item.status]}
+                          {t(`status${item.status}`)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-muted">{item.createdAt}</td>
@@ -154,7 +151,7 @@ export default function AdminModerationPage() {
                               ) : (
                                 <CheckCircle size={11} />
                               )}
-                              Hal qilindi
+                              {t("actionResolve")}
                             </button>
                             <button
                               onClick={() => handleDismiss(item)}
@@ -166,7 +163,7 @@ export default function AdminModerationPage() {
                               ) : (
                                 <XCircle size={11} />
                               )}
-                              Rad etildi
+                              {t("actionDismiss")}
                             </button>
                           </div>
                         )}

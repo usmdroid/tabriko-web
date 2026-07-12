@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import {
   fetchOrders,
   AdminOrder,
@@ -9,16 +10,6 @@ import { ApiError } from "@/lib/api";
 import { Skeleton } from "@/app/components/Skeleton";
 
 type StatusFilter = "" | "pending" | "in_progress" | "delivered" | "accepted" | "rejected" | "refunded";
-
-const STATUS_TABS: { value: StatusFilter; label: string }[] = [
-  { value: "", label: "Barchasi" },
-  { value: "pending", label: "Kutilmoqda" },
-  { value: "in_progress", label: "Jarayonda" },
-  { value: "delivered", label: "Yetkazildi" },
-  { value: "accepted", label: "Qabul qilindi" },
-  { value: "rejected", label: "Rad etildi" },
-  { value: "refunded", label: "Qaytarildi" },
-];
 
 const STATUS_BADGE: Record<AdminOrder["status"], string> = {
   pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
@@ -29,24 +20,36 @@ const STATUS_BADGE: Record<AdminOrder["status"], string> = {
   refunded: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
-const STATUS_LABEL: Record<AdminOrder["status"], string> = {
-  pending: "Kutilmoqda",
-  in_progress: "Jarayonda",
-  delivered: "Yetkazildi",
-  accepted: "Qabul qilindi",
-  rejected: "Rad etildi",
-  refunded: "Qaytarildi",
-};
-
 function formatAmount(amount: number) {
   return amount.toLocaleString("uz-UZ") + " so'm";
 }
 
 export default function AdminOrdersPage() {
+  const t = useTranslations("adminOrders");
+
   const [allOrders, setAllOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
   const [error, setError] = useState("");
+
+  const STATUS_TABS: { value: StatusFilter; labelKey: string }[] = [
+    { value: "", labelKey: "filterAll" },
+    { value: "pending", labelKey: "statusPending" },
+    { value: "in_progress", labelKey: "statusInProgress" },
+    { value: "delivered", labelKey: "statusDelivered" },
+    { value: "accepted", labelKey: "statusAccepted" },
+    { value: "rejected", labelKey: "statusRejected" },
+    { value: "refunded", labelKey: "statusRefunded" },
+  ];
+
+  const STATUS_LABEL: Record<AdminOrder["status"], string> = {
+    pending: t("statusPending"),
+    in_progress: t("statusInProgress"),
+    delivered: t("statusDelivered"),
+    accepted: t("statusAccepted"),
+    rejected: t("statusRejected"),
+    refunded: t("statusRefunded"),
+  };
 
   const orders = statusFilter
     ? allOrders.filter((o) => o.status === statusFilter)
@@ -59,11 +62,11 @@ export default function AdminOrdersPage() {
       setAllOrders(await fetchOrders());
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
-      else setError("Ma'lumot mavjud emas.");
+      else setError(t("error"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -71,7 +74,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-primary mb-4">Buyurtmalar</h1>
+      <h1 className="text-xl font-semibold text-primary mb-4">{t("pageTitle")}</h1>
 
       {/* Status tabs */}
       <div className="flex gap-1 mb-4 flex-wrap">
@@ -85,7 +88,7 @@ export default function AdminOrdersPage() {
                 : "border border-line text-muted hover:bg-card"
             }`}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
@@ -102,12 +105,12 @@ export default function AdminOrdersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs text-muted">
-                <th className="px-4 py-3 font-medium">ID</th>
-                <th className="px-4 py-3 font-medium">Foydalanuvchi</th>
-                <th className="px-4 py-3 font-medium">Kreator</th>
-                <th className="px-4 py-3 font-medium">Miqdor</th>
-                <th className="px-4 py-3 font-medium">Holati</th>
-                <th className="px-4 py-3 font-medium">Sana</th>
+                <th className="px-4 py-3 font-medium">{t("colId")}</th>
+                <th className="px-4 py-3 font-medium">{t("colUser")}</th>
+                <th className="px-4 py-3 font-medium">{t("colCreator")}</th>
+                <th className="px-4 py-3 font-medium">{t("colAmount")}</th>
+                <th className="px-4 py-3 font-medium">{t("colStatus")}</th>
+                <th className="px-4 py-3 font-medium">{t("colDate")}</th>
               </tr>
             </thead>
             <tbody>
@@ -124,7 +127,7 @@ export default function AdminOrdersPage() {
               ) : orders.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-muted">
-                    Buyurtmalar topilmadi
+                    {t("notFound")}
                   </td>
                 </tr>
               ) : (

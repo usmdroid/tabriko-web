@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   fetchUsers,
   blockUser,
@@ -15,13 +16,10 @@ import { useDebouncedValue, isAbortError } from "@/lib/hooks";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Spinner } from "@/app/components/Spinner";
 
-const STATUS_LABEL: Record<AdminUser["status"], string> = {
-  active: "Faol",
-  blocked: "Bloklangan",
-};
-
 export default function AdminUsersPage() {
   const router = useRouter();
+  const t = useTranslations("adminUsers");
+
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -44,11 +42,11 @@ export default function AdminUsersPage() {
     } catch (e) {
       if (isAbortError(e)) return;
       if (e instanceof ApiError) setError(e.message);
-      else setError("Ma'lumot mavjud emas.");
+      else setError(t("error"));
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, [debouncedSearch, statusFilter]);
+  }, [debouncedSearch, statusFilter, t]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -73,7 +71,7 @@ export default function AdminUsersPage() {
       );
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
-      else setError("Amal bajarilmadi.");
+      else setError(t("errorAction"));
     } finally {
       setBusy((b) => ({ ...b, [user.id]: false }));
     }
@@ -81,7 +79,7 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-primary mb-4">Foydalanuvchilar</h1>
+      <h1 className="text-xl font-semibold text-primary mb-4">{t("pageTitle")}</h1>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -92,7 +90,7 @@ export default function AdminUsersPage() {
           />
           <input
             type="text"
-            placeholder="Qidirish..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-lg border border-line bg-surface pl-9 pr-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent"
@@ -103,9 +101,9 @@ export default function AdminUsersPage() {
           onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
           className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
         >
-          <option value="">Barcha holatlar</option>
-          <option value="active">Faol</option>
-          <option value="blocked">Bloklangan</option>
+          <option value="">{t("filterAll")}</option>
+          <option value="active">{t("filterActive")}</option>
+          <option value="blocked">{t("filterBlocked")}</option>
         </select>
       </div>
 
@@ -121,11 +119,11 @@ export default function AdminUsersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs text-muted">
-                <th className="px-4 py-3 font-medium">Ism</th>
-                <th className="px-4 py-3 font-medium">Telefon</th>
-                <th className="px-4 py-3 font-medium">Holati</th>
-                <th className="px-4 py-3 font-medium">Ro&apos;yxatdan o&apos;tgan</th>
-                <th className="px-4 py-3 font-medium">Amallar</th>
+                <th className="px-4 py-3 font-medium">{t("colName")}</th>
+                <th className="px-4 py-3 font-medium">{t("colPhone")}</th>
+                <th className="px-4 py-3 font-medium">{t("colStatus")}</th>
+                <th className="px-4 py-3 font-medium">{t("colCreatedAt")}</th>
+                <th className="px-4 py-3 font-medium">{t("colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -142,7 +140,7 @@ export default function AdminUsersPage() {
               ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-muted">
-                    Foydalanuvchilar topilmadi
+                    {t("notFound")}
                   </td>
                 </tr>
               ) : (
@@ -162,7 +160,7 @@ export default function AdminUsersPage() {
                             : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                         }`}
                       >
-                        {STATUS_LABEL[user.status]}
+                        {user.status === "active" ? t("statusActive") : t("statusBlocked")}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted">{user.createdAt}</td>
@@ -173,7 +171,7 @@ export default function AdminUsersPage() {
                           onClick={(e) => e.stopPropagation()}
                           className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted hover:border-accent hover:text-accent transition-colors"
                         >
-                          Batafsil
+                          {t("actionDetail")}
                         </Link>
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleBlock(user); }}
@@ -181,7 +179,7 @@ export default function AdminUsersPage() {
                           className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
                         >
                           {busy[user.id] && <Spinner size={12} />}
-                          {user.status === "active" ? "Bloklash" : "Faollashtirish"}
+                          {user.status === "active" ? t("actionBlock") : t("actionUnblock")}
                         </button>
                       </div>
                     </td>

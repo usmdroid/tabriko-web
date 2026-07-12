@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Eye, Check, Trash2 } from "lucide-react";
 import {
@@ -33,6 +34,7 @@ const STATUS_COLORS: Record<AdminApplicationStatus, string> = {
 };
 
 export default function AdminApplicationsPage() {
+  const router = useRouter();
   const t = useTranslations("adminApplications");
 
   const [filter, setFilter] = useState<AdminApplicationStatus | "ALL">("ALL");
@@ -156,11 +158,13 @@ export default function AdminApplicationsPage() {
                 items.map((item) => (
                   <tr
                     key={item.id}
-                    className="border-b border-line last:border-0 hover:bg-card/50 transition-colors"
+                    className="border-b border-line last:border-0 hover:bg-card/50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/admin/applications/${item.id}`)}
                   >
                     <td className="px-4 py-3 font-medium text-primary">
                       <Link
                         href={`/admin/applications/${item.id}`}
+                        onClick={(e) => e.stopPropagation()}
                         className="hover:text-accent transition-colors"
                       >
                         {item.name ?? "—"}
@@ -185,6 +189,7 @@ export default function AdminApplicationsPage() {
                       <div className="flex items-center justify-end gap-1.5">
                         <Link
                           href={`/admin/applications/${item.id}`}
+                          onClick={(e) => e.stopPropagation()}
                           title={t("actionDetail")}
                           aria-label={t("actionDetail")}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line text-muted hover:border-accent/50 hover:text-accent transition-colors"
@@ -192,7 +197,7 @@ export default function AdminApplicationsPage() {
                           <Eye size={15} />
                         </Link>
                         <button
-                          onClick={() => handleApprove(item.id)}
+                          onClick={(e) => { e.stopPropagation(); handleApprove(item.id); }}
                           disabled={busyId === item.id || item.status === "APPROVED"}
                           title={t("actionApprove")}
                           aria-label={t("actionApprove")}
@@ -201,7 +206,7 @@ export default function AdminApplicationsPage() {
                           <Check size={15} />
                         </button>
                         <button
-                          onClick={() => handleDelete(item.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
                           disabled={busyId === item.id}
                           title={t("actionDelete")}
                           aria-label={t("actionDelete")}

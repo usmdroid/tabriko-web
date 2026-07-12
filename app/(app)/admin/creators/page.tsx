@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Plus, CheckCircle, X } from "lucide-react";
 import {
   fetchCreators,
@@ -14,15 +16,6 @@ import { ApiError, getCategories, Category } from "@/lib/api";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Spinner } from "@/app/components/Spinner";
 
-const FLAG_LABEL: Record<string, string> = { top: "Top", exclusive: "Exclusive" };
-
-const TIER_LABEL: Record<CreatorTier, string> = {
-  STANDARD: "Standart",
-  RISING: "O'sib kelayotgan",
-  TOP: "Top",
-  CELEBRITY: "Mashhur",
-};
-
 const TIER_COLOR: Record<CreatorTier, string> = {
   STANDARD: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
   RISING: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
@@ -31,16 +24,17 @@ const TIER_COLOR: Record<CreatorTier, string> = {
 };
 
 export default function AdminCreatorsPage() {
+  const router = useRouter();
+  const t = useTranslations("adminCreators");
+
   const [creators, setCreators] = useState<AdminCreator[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
   const [showAdd, setShowAdd] = useState(false);
 
-  // Categories list for dropdown
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // Add creator form state
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newCategoryId, setNewCategoryId] = useState<number | "">("");
@@ -57,11 +51,11 @@ export default function AdminCreatorsPage() {
       setCreators(await fetchCreators());
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
-      else setError("Ma'lumot mavjud emas.");
+      else setError(t("error"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -88,18 +82,18 @@ export default function AdminCreatorsPage() {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!newCategoryId) {
-      setAddError("Kategoriya tanlanishi shart.");
+      setAddError(t("errCategoryRequired"));
       return;
     }
     const series = newPassportSeries.trim();
     const number = newPassportNumber.trim();
     if (series || number) {
       if (!/^[A-Z]{2}$/.test(series)) {
-        setAddError("Pasport seriyasi 2 ta KATTA harf bo'lishi kerak (masalan: AA).");
+        setAddError(t("errPassportSeries"));
         return;
       }
       if (!/^[0-9]{7}$/.test(number)) {
-        setAddError("Pasport raqami aynan 7 ta raqam bo'lishi kerak.");
+        setAddError(t("errPassportNumber"));
         return;
       }
     }
@@ -123,7 +117,7 @@ export default function AdminCreatorsPage() {
       await load();
     } catch (err) {
       if (err instanceof ApiError) setAddError(err.message);
-      else setAddError("Xatolik yuz berdi.");
+      else setAddError(t("error"));
     } finally {
       setAdding(false);
     }
@@ -132,13 +126,13 @@ export default function AdminCreatorsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-primary">Kreatorlar</h1>
+        <h1 className="text-xl font-semibold text-primary">{t("pageTitle")}</h1>
         <button
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-1.5 btn-neon rounded-lg px-4 py-2 text-sm font-medium text-white"
         >
           <Plus size={15} />
-          Qo&apos;shish
+          {t("addBtn")}
         </button>
       </div>
 
@@ -154,12 +148,12 @@ export default function AdminCreatorsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs text-muted">
-                <th className="px-4 py-3 font-medium">Ism</th>
-                <th className="px-4 py-3 font-medium">Kategoriya</th>
-                <th className="px-4 py-3 font-medium">Daraja</th>
-                <th className="px-4 py-3 font-medium">Holati</th>
-                <th className="px-4 py-3 font-medium">Flag</th>
-                <th className="px-4 py-3 font-medium">Amallar</th>
+                <th className="px-4 py-3 font-medium">{t("colName")}</th>
+                <th className="px-4 py-3 font-medium">{t("colCategory")}</th>
+                <th className="px-4 py-3 font-medium">{t("colTier")}</th>
+                <th className="px-4 py-3 font-medium">{t("colStatus")}</th>
+                <th className="px-4 py-3 font-medium">{t("colFlag")}</th>
+                <th className="px-4 py-3 font-medium">{t("colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -176,17 +170,22 @@ export default function AdminCreatorsPage() {
               ) : creators.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-muted">
-                    Kreatorlar topilmadi
+                    {t("notFound")}
                   </td>
                 </tr>
               ) : (
                 creators.map((creator) => (
                   <tr
                     key={creator.id}
-                    className="border-b border-line last:border-0 hover:bg-card/50 transition-colors"
+                    className="border-b border-line last:border-0 hover:bg-card/50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/admin/creators/${creator.id}`)}
                   >
                     <td className="px-4 py-3 font-medium text-primary">
-                      <Link href={`/admin/creators/${creator.id}`} className="hover:text-accent transition-colors">
+                      <Link
+                        href={`/admin/creators/${creator.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="hover:text-accent transition-colors"
+                      >
                         {creator.name}
                       </Link>
                     </td>
@@ -194,7 +193,7 @@ export default function AdminCreatorsPage() {
                     <td className="px-4 py-3">
                       {creator.tier ? (
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TIER_COLOR[creator.tier]}`}>
-                          {TIER_LABEL[creator.tier]}
+                          {t(`tier${creator.tier}`)}
                         </span>
                       ) : (
                         <span className="text-muted text-xs">—</span>
@@ -208,13 +207,13 @@ export default function AdminCreatorsPage() {
                             : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
                         }`}
                       >
-                        {creator.verified ? "Tasdiqlangan" : "Tasdiqlanmagan"}
+                        {creator.verified ? t("statusVerified") : t("statusUnverified")}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       {creator.flag ? (
                         <span className="inline-flex rounded-full bg-accent/10 text-accent px-2 py-0.5 text-xs font-medium">
-                          {FLAG_LABEL[creator.flag]}
+                          {creator.flag === "top" ? t("flagTop") : t("flagExclusive")}
                         </span>
                       ) : (
                         <span className="text-muted text-xs">—</span>
@@ -224,19 +223,20 @@ export default function AdminCreatorsPage() {
                       <div className="flex items-center gap-2">
                         {!creator.verified && (
                           <button
-                            onClick={() => handleVerify(creator)}
+                            onClick={(e) => { e.stopPropagation(); handleVerify(creator); }}
                             disabled={busy[creator.id]}
                             className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-green-500 hover:text-green-600 transition-colors disabled:opacity-50"
                           >
                             {busy[creator.id] ? <Spinner size={11} /> : <CheckCircle size={11} />}
-                            Tasdiqlash
+                            {t("actionVerify")}
                           </button>
                         )}
                         <Link
                           href={`/admin/creators/${creator.id}`}
+                          onClick={(e) => e.stopPropagation()}
                           className="rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-accent/50 hover:text-accent transition-colors"
                         >
-                          Batafsil
+                          {t("actionDetail")}
                         </Link>
                       </div>
                     </td>
@@ -261,7 +261,7 @@ export default function AdminCreatorsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-primary">Kreator qo&apos;shish</h2>
+              <h2 className="text-base font-semibold text-primary">{t("addTitle")}</h2>
               <button type="button" onClick={() => setShowAdd(false)} className="text-muted hover:text-primary">
                 <X size={18} />
               </button>
@@ -274,7 +274,7 @@ export default function AdminCreatorsPage() {
             )}
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Ism</label>
+              <label className="text-xs font-medium text-muted">{t("fieldName")}</label>
               <input
                 type="text"
                 required
@@ -285,7 +285,7 @@ export default function AdminCreatorsPage() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Telefon</label>
+              <label className="text-xs font-medium text-muted">{t("fieldPhone")}</label>
               <input
                 type="text"
                 required
@@ -297,14 +297,14 @@ export default function AdminCreatorsPage() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Kategoriya</label>
+              <label className="text-xs font-medium text-muted">{t("fieldCategory")}</label>
               <select
                 required
                 value={newCategoryId}
                 onChange={(e) => setNewCategoryId(e.target.value ? Number(e.target.value) : "")}
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
               >
-                <option value="">— Tanlang —</option>
+                <option value="">{t("fieldCategoryPlaceholder")}</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -313,40 +313,40 @@ export default function AdminCreatorsPage() {
 
             <div className="flex gap-2">
               <div className="flex flex-col gap-1 flex-1">
-                <label className="text-xs font-medium text-muted">Pasport seriyasi</label>
+                <label className="text-xs font-medium text-muted">{t("fieldPassportSeries")}</label>
                 <input
                   type="text"
                   maxLength={2}
                   value={newPassportSeries}
                   onChange={(e) => setNewPassportSeries(e.target.value.toUpperCase())}
-                  placeholder="AA"
+                  placeholder={t("fieldPassportSeriesPlaceholder")}
                   className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
                 />
               </div>
               <div className="flex flex-col gap-1 flex-1">
-                <label className="text-xs font-medium text-muted">Pasport raqami</label>
+                <label className="text-xs font-medium text-muted">{t("fieldPassportNumber")}</label>
                 <input
                   type="text"
                   maxLength={7}
                   value={newPassportNumber}
                   onChange={(e) => setNewPassportNumber(e.target.value.replace(/\D/g, ""))}
-                  placeholder="1234567"
+                  placeholder={t("fieldPassportNumberPlaceholder")}
                   className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
                 />
               </div>
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Daraja</label>
+              <label className="text-xs font-medium text-muted">{t("fieldTier")}</label>
               <select
                 value={newTier}
                 onChange={(e) => setNewTier(e.target.value as CreatorTier)}
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
               >
-                <option value="STANDARD">Standart</option>
-                <option value="RISING">O&apos;sib kelayotgan</option>
-                <option value="TOP">Top</option>
-                <option value="CELEBRITY">Mashhur</option>
+                <option value="STANDARD">{t("tierSTANDARD")}</option>
+                <option value="RISING">{t("tierRISING")}</option>
+                <option value="TOP">{t("tierTOP")}</option>
+                <option value="CELEBRITY">{t("tierCELEBRITY")}</option>
               </select>
             </div>
 
@@ -356,7 +356,7 @@ export default function AdminCreatorsPage() {
                 onClick={() => setShowAdd(false)}
                 className="rounded-lg border border-line px-4 py-2 text-sm text-muted hover:bg-card transition-colors"
               >
-                Bekor qilish
+                {t("cancelBtn")}
               </button>
               <button
                 type="submit"
@@ -364,7 +364,7 @@ export default function AdminCreatorsPage() {
                 className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-hover transition-colors disabled:opacity-60"
               >
                 {adding && <Spinner size={13} />}
-                Saqlash
+                {t("saveBtn")}
               </button>
             </div>
           </form>
