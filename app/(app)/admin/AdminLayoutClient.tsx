@@ -27,6 +27,8 @@ import { BRAND } from "@/lib/brand";
 // ─── Nav definition ────────────────────────────────────────────────────────────
 
 const NAV = [
+  // `/admin` is the users list, but user detail pages live at /admin/users/*, so
+  // this entry also owns that subtree (see isNavActive).
   { href: "/admin", key: "users", icon: Users, exact: true, superAdminOnly: false },
   { href: "/admin/creators", key: "creators", icon: Star, exact: false, superAdminOnly: false },
   { href: "/admin/categories", key: "categories", icon: Tag, exact: false, superAdminOnly: false },
@@ -38,6 +40,17 @@ const NAV = [
   { href: "/admin/stats", key: "stats", icon: BarChart2, exact: false, superAdminOnly: false },
   { href: "/admin/settings", key: "settings", icon: Settings, exact: false, superAdminOnly: true },
 ];
+
+/** Whether a nav item should be highlighted for the current pathname. */
+function isNavActive(item: (typeof NAV)[number], pathname: string): boolean {
+  // The users list ("/admin") also owns the user detail subtree ("/admin/users/*").
+  if (item.href === "/admin") {
+    return pathname === "/admin" || pathname.startsWith("/admin/users");
+  }
+  // Match the section root and any sub-route, but not a sibling that merely
+  // shares a prefix (e.g. don't let "/admin/order" light up "/admin/orders").
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
 
 // ─── Sidebar content ──────────────────────────────────────────────────────────
 
@@ -70,16 +83,15 @@ function SidebarContent({
       {/* Nav links */}
       <nav className="flex-1 overflow-y-auto py-4 px-2">
         {filtered.map((item) => {
-          const active = item.exact
-            ? pathname === item.href
-            : pathname.startsWith(item.href);
+          const active = isNavActive(item, pathname);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-0.5 ${
+              aria-current={active ? "page" : undefined}
+              className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-0.5 ${
                 active
-                  ? "bg-accent/10 text-accent"
+                  ? "bg-accent/15 text-accent ring-1 ring-inset ring-accent/30 shadow-[0_0_12px_-2px] shadow-accent/40 before:absolute before:left-0 before:top-1/2 before:h-5 before:w-1 before:-translate-y-1/2 before:rounded-r before:bg-accent"
                   : "text-muted hover:bg-card hover:text-primary"
               }`}
             >
