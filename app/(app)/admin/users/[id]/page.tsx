@@ -30,7 +30,7 @@ export default function AdminUserDetailPage() {
   const [mode, setMode] = useState<"all" | "selected">("all");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
-  const [sendSuccess, setSendSuccess] = useState(false);
+  const [sendSuccessMsg, setSendSuccessMsg] = useState("");
   const [blockingId, setBlockingId] = useState<string | null>(null);
   const [showNotifyModal, setShowNotifyModal] = useState(false);
 
@@ -58,7 +58,7 @@ export default function AdminUserDetailPage() {
       setNotifyBody("");
       setMode("all");
       setSendError("");
-      setSendSuccess(false);
+      setSelectedIds(new Set());
     }
   }, [showNotifyModal]);
 
@@ -101,19 +101,28 @@ export default function AdminUserDetailPage() {
 
     setSending(true);
     setSendError("");
-    setSendSuccess(false);
+    setSendSuccessMsg("");
     try {
       const deviceIds = mode === "all" ? [] : [...selectedIds];
-      await sendUserNotification(detail.id, {
+      const result = await sendUserNotification(detail.id, {
         title: notifyTitle,
         body: notifyBody,
         deviceIds,
       });
-      setSendSuccess(true);
+      // Build a meaningful confirmation from what the backend actually did.
+      let msg: string;
+      if (!result || result.delivered === 0) {
+        msg = t("sendSuccessNoDevice");
+      } else if (result.failed > 0) {
+        msg = t("sendSuccessPartial", { delivered: result.delivered, failed: result.failed });
+      } else {
+        msg = t("sendSuccessCount", { delivered: result.delivered });
+      }
+      setSendSuccessMsg(msg);
       setNotifyTitle("");
       setNotifyBody("");
       setShowNotifyModal(false);
-      setTimeout(() => setSendSuccess(false), 3000);
+      setTimeout(() => setSendSuccessMsg(""), 5000);
     } catch (e) {
       if (e instanceof ApiError) setSendError(e.message);
       else setSendError(t("error"));
@@ -231,14 +240,6 @@ export default function AdminUserDetailPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-line text-left text-muted">
-                  <th className="pb-2 pr-3">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={toggleAll}
-                      className="accent-accent"
-                    />
-                  </th>
                   <th className="pb-2 pr-3 font-medium">{t("deviceName")}</th>
                   <th className="pb-2 pr-3 font-medium">{t("osVersion")}</th>
                   <th className="pb-2 pr-3 font-medium">{t("appVersion")}</th>
@@ -254,14 +255,6 @@ export default function AdminUserDetailPage() {
                     key={d.id}
                     className="border-b border-line last:border-0 hover:bg-card/50 transition-colors"
                   >
-                    <td className="py-2 pr-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(d.id)}
-                        onChange={() => toggleDevice(d.id)}
-                        className="accent-accent"
-                      />
-                    </td>
                     <td className="py-2 pr-3 text-primary">{d.deviceName}</td>
                     <td className="py-2 pr-3 text-muted">{d.osVersion}</td>
                     <td className="py-2 pr-3 text-muted">{d.appVersion}</td>
@@ -294,6 +287,12 @@ export default function AdminUserDetailPage() {
           </div>
         )}
       </div>
+
+      {sendSuccessMsg && (
+        <p className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2 mb-4">
+          {sendSuccessMsg}
+        </p>
+      )}
 
       <div className="flex justify-end mb-4">
         <button
@@ -369,21 +368,54 @@ export default function AdminUserDetailPage() {
               </label>
             </div>
 
-            {mode === "selected" && selectedIds.size === 0 && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                {t("selectDevicesHint")}
-              </p>
+            {mode === "selected" && (
+              <div className="flex flex-col gap-1">
+                {detail.devices.length === 0 ? (
+                  <p className="text-xs text-muted">{t("noDevices")}</p>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-muted">
+                        {t("chooseDevices")}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={toggleAll}
+                        className="text-xs text-accent hover:underline"
+                      >
+                        {allSelected ? t("deselectAll") : t("selectAll")}
+                      </button>
+                    </div>
+                    <div className="flex flex-col gap-1 max-h-48 overflow-y-auto rounded-lg border border-line p-1">
+                      {detail.devices.map((d) => (
+                        <label
+                          key={d.id}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-surface"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(d.id)}
+                            onChange={() => toggleDevice(d.id)}
+                            className="accent-accent"
+                          />
+                          <span className="text-sm text-primary">{d.deviceName}</span>
+                          <span className="text-xs text-muted">· {d.platform}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {selectedIds.size === 0 && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        {t("selectDevicesHint")}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
             )}
 
             {sendError && (
               <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
                 {sendError}
-              </p>
-            )}
-
-            {sendSuccess && (
-              <p className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
-                {t("sendSuccess")}
               </p>
             )}
 

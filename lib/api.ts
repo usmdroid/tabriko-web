@@ -33,6 +33,18 @@ export class ApiError extends Error {
   }
 }
 
+// Human-readable message for a response whose body we couldn't parse as JSON
+// (empty body or an HTML gateway error page while the backend is cold-starting).
+function statusMessage(status: number): string {
+  if (status === 0) return "Server bilan bog'lanib bo'lmadi. Internet aloqasini tekshiring.";
+  if (status === 502 || status === 503 || status === 504)
+    return "Server hozircha javob bermayapti. Bir necha soniyadan so'ng qayta urinib ko'ring.";
+  if (status >= 500) return "Serverda xatolik yuz berdi. Bir necha soniyadan so'ng qayta urinib ko'ring.";
+  if (status === 413) return "Yuborilayotgan ma'lumot hajmi juda katta.";
+  if (status >= 400) return "So'rov bajarilmadi. Ma'lumotlarni tekshirib qayta urinib ko'ring.";
+  return "Kutilmagan xatolik yuz berdi.";
+}
+
 async function request<T>(
   path: string,
   init?: RequestInit & { token?: string; jsonBody?: boolean },
@@ -53,19 +65,38 @@ async function request<T>(
     throw new ApiError(0, "NETWORK_ERROR", "Tarmoq xatosi. Internet aloqasini tekshiring.");
   }
 
-  const json: ApiResponse<T> = await res.json().catch(() => ({
-    success: false,
-    httpStatus: res.status,
-    code: "PARSE_ERROR",
-    message: { code: "PARSE_ERROR", text: "Javob o'qib bo'lmadi." },
-    data: null as T,
-  }));
+  const text = await res.text().catch(() => "");
+  let json: ApiResponse<T>;
+  if (!text.trim()) {
+    // Empty body — valid for a 200/204 success; otherwise a status message.
+    const code = res.ok ? "OK" : `HTTP_${res.status}`;
+    json = {
+      success: res.ok,
+      httpStatus: res.status,
+      code,
+      message: { code, text: res.ok ? "OK" : statusMessage(res.status) },
+      data: null as T,
+    };
+  } else {
+    try {
+      json = JSON.parse(text) as ApiResponse<T>;
+    } catch {
+      const code = `HTTP_${res.status}`;
+      json = {
+        success: false,
+        httpStatus: res.status,
+        code,
+        message: { code, text: statusMessage(res.status) },
+        data: null as T,
+      };
+    }
+  }
 
   if (!res.ok) {
     throw new ApiError(
       res.status,
       json.code ?? "UNKNOWN",
-      json.message?.text ?? "Xatolik yuz berdi.",
+      json.message?.text ?? statusMessage(res.status),
     );
   }
 

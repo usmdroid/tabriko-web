@@ -41,14 +41,46 @@ function isAbortError(err: unknown): boolean {
   return err instanceof DOMException && err.name === "AbortError";
 }
 
+// Human-readable message for a response whose body we couldn't parse as JSON.
+// This happens for empty bodies and for gateway/HTML error pages (e.g. a 502/504
+// while the backend is cold-starting) — never surface the raw "can't parse".
+function statusMessage(status: number): string {
+  if (status === 0) return "Server bilan bog'lanib bo'lmadi. Internet aloqasini tekshiring.";
+  if (status === 502 || status === 503 || status === 504)
+    return "Server hozircha javob bermayapti. Bir necha soniyadan so'ng qayta urinib ko'ring.";
+  if (status >= 500) return "Serverda xatolik yuz berdi. Bir necha soniyadan so'ng qayta urinib ko'ring.";
+  if (status === 413) return "Yuborilayotgan ma'lumot hajmi juda katta.";
+  if (status >= 400) return "So'rov bajarilmadi. Ma'lumotlarni tekshirib qayta urinib ko'ring.";
+  return "Kutilmagan xatolik yuz berdi.";
+}
+
 async function parseResponse<T>(res: Response): Promise<ApiResponse<T>> {
-  return res.json().catch(() => ({
-    success: false,
-    httpStatus: res.status,
-    code: "PARSE_ERROR",
-    message: { code: "PARSE_ERROR", text: "Javob o'qib bo'lmadi." },
-    data: null as T,
-  }));
+  const text = await res.text().catch(() => "");
+  // Empty body (e.g. 200/204 with no content) is a valid success — don't turn
+  // it into a parse error the way JSON.parse("") would.
+  if (!text.trim()) {
+    const code = res.ok ? "OK" : `HTTP_${res.status}`;
+    return {
+      success: res.ok,
+      httpStatus: res.status,
+      code,
+      message: { code, text: res.ok ? "OK" : statusMessage(res.status) },
+      data: null as T,
+    };
+  }
+  try {
+    return JSON.parse(text) as ApiResponse<T>;
+  } catch {
+    // Non-JSON body (HTML error page from a gateway, etc.).
+    const code = `HTTP_${res.status}`;
+    return {
+      success: false,
+      httpStatus: res.status,
+      code,
+      message: { code, text: statusMessage(res.status) },
+      data: null as T,
+    };
+  }
 }
 
 async function authRequest<T>(

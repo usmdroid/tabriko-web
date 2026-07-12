@@ -219,7 +219,13 @@
     "actionBlock": "Bloklash",
     "actionUnblock": "Faollashtirish",
     "notFound": "Foydalanuvchilar topilmadi",
-    "errorAction": "Amal bajarilmadi."
+    "errorAction": "Amal bajarilmadi.",
+    "chooseDevices": "Qurilmalarni tanlang",
+    "selectAll": "Barchasini tanlash",
+    "deselectAll": "Tanlovni bekor qilish",
+    "sendSuccessCount": "Xabarnoma {delivered} ta qurilmaga yuborildi",
+    "sendSuccessPartial": "Xabarnoma {delivered} ta qurilmaga yuborildi, {failed} tasiga yuborilmadi (qurilma nofaol)",
+    "sendSuccessNoDevice": "Xabarnoma saqlandi. Foydalanuvchida faol qurilma yo'q — ilovani ochganda ko'radi."
   },
   "adminCreators": {
     "detailTitle": "Kreator tafsiloti",

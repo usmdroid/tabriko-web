@@ -409,11 +409,18 @@ export async function fetchUser(
   return mapUserDetail(res.data as BackendUserDetailResponse);
 }
 
+export interface NotifyResult {
+  targeted: number;
+  delivered: number;
+  failed: number;
+}
+
 export async function sendUserNotification(
   id: string,
   payload: { title: string; body: string; deviceIds?: string[] },
-): Promise<void> {
-  await authPost("admin", `/admin/users/${id}/notify`, payload);
+): Promise<NotifyResult | null> {
+  const res = await authPost<NotifyResult>("admin", `/admin/users/${id}/notify`, payload);
+  return res.data ?? null;
 }
 
 export async function blockDevice(deviceId: string) {

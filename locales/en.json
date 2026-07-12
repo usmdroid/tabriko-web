@@ -282,7 +282,13 @@
     "actionBlock": "Block",
     "actionUnblock": "Unblock",
     "notFound": "No users found",
-    "errorAction": "Action failed."
+    "errorAction": "Action failed.",
+    "chooseDevices": "Choose devices",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "sendSuccessCount": "Notification sent to {delivered} device(s)",
+    "sendSuccessPartial": "Notification sent to {delivered} device(s), {failed} failed (device inactive)",
+    "sendSuccessNoDevice": "Notification saved. The user has no active device — they will see it when they open the app."
   },
   "adminCreators": {
     "detailTitle": "Creator detail",
