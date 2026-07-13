@@ -40,6 +40,8 @@ export interface AdminUserDetail {
   role: string;
   status: "active" | "blocked";
   createdAt: string;
+  email: string | null;
+  birthday: string | null;
   devices: AdminDevice[];
 }
 
@@ -234,6 +236,8 @@ interface BackendUserDetailResponse {
   role?: string;
   status: string;
   createdAt: string;
+  email?: string;
+  birthDate?: string;
   devices?: Array<{
     id: string;
     platform?: string;
@@ -307,6 +311,13 @@ function mapUser(u: BackendUserResponse): AdminUser {
   };
 }
 
+function formatBirthday(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const parts = raw.split("-");
+  if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+  return raw;
+}
+
 function mapUserDetail(u: BackendUserDetailResponse): AdminUserDetail {
   return {
     id: u.id,
@@ -315,6 +326,8 @@ function mapUserDetail(u: BackendUserDetailResponse): AdminUserDetail {
     role: u.role ?? "—",
     status: u.status?.toLowerCase() === "active" ? "active" : "blocked",
     createdAt: formatDate(u.createdAt),
+    email: u.email ?? null,
+    birthday: formatBirthday(u.birthDate),
     devices: (u.devices ?? []).map((d) => ({
       id: d.id,
       platform: d.platform ?? "—",

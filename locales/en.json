@@ -288,7 +288,10 @@
     "deselectAll": "Deselect all",
     "sendSuccessCount": "Notification sent to {delivered} device(s)",
     "sendSuccessPartial": "Notification sent to {delivered} device(s), {failed} failed (device inactive)",
-    "sendSuccessNoDevice": "Notification saved. The user has no active device — they will see it when they open the app."
+    "sendSuccessNoDevice": "Notification saved. The user has no active device — they will see it when they open the app.",
+    "colEmail": "Email",
+    "colBirthday": "Birthday",
+    "notSet": "—"
   },
   "adminCreators": {
     "detailTitle": "Creator detail",

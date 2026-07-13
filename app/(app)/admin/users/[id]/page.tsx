@@ -227,6 +227,14 @@ export default function AdminUserDetailPage() {
             <p className="text-xs text-muted mb-0.5">{t("colCreatedAt")}</p>
             <p className="font-medium text-primary">{detail.createdAt}</p>
           </div>
+          <div>
+            <p className="text-xs text-muted mb-0.5">{t("colEmail")}</p>
+            <p className="font-medium text-primary">{detail.email || <span className="text-muted">{t("notSet")}</span>}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted mb-0.5">{t("colBirthday")}</p>
+            <p className="font-medium text-primary">{detail.birthday || <span className="text-muted">{t("notSet")}</span>}</p>
+          </div>
         </div>
       </div>
 
