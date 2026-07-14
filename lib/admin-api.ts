@@ -52,6 +52,8 @@ export interface AdminCreatorContact {
   createdAt: string;
 }
 
+export interface AdminRequisiteRef { name: string; emoji?: string; }
+
 export interface AdminCreator {
   id: string;
   name: string;
@@ -62,6 +64,7 @@ export interface AdminCreator {
   tier?: CreatorTier;
   contacts: AdminCreatorContact[];
   accountStatus?: string;
+  requisites: AdminRequisiteRef[];
 }
 
 export interface AddCreatorRequest {
@@ -190,6 +193,7 @@ interface BackendCreatorResponse {
   tier?: string;
   status?: string;
   contacts?: AdminCreatorContact[];
+  requisites?: Array<{ name: string; emoji?: string }>;
 }
 
 interface BackendOrderResponse {
@@ -285,6 +289,7 @@ function mapCreator(c: BackendCreatorResponse): AdminCreator {
     tier: (c.tier as CreatorTier) ?? undefined,
     contacts: c.contacts ?? [],
     accountStatus: c.status,
+    requisites: c.requisites ?? [],
   };
 }
 
@@ -703,4 +708,28 @@ export async function updatePromotion(id: number, data: AdminPromotionRequest): 
 
 export async function deletePromotion(id: number): Promise<void> {
   await authDel("admin", `/admin/promotions/${id}`);
+}
+
+// ─── Requisites ────────────────────────────────────────────────────────────────
+
+export interface AdminRequisite { id: number; name: string; emoji?: string; }
+export interface AdminRequisiteRequest { name: string; emoji: string; }
+
+export async function getAdminRequisites(signal?: AbortSignal): Promise<AdminRequisite[]> {
+  const res = await authGet<AdminRequisite[]>("admin", "/admin/requisites", signal);
+  return res.data ?? [];
+}
+
+export async function createRequisite(data: AdminRequisiteRequest): Promise<AdminRequisite> {
+  const res = await authPost<AdminRequisite>("admin", "/admin/requisites", data);
+  return res.data;
+}
+
+export async function updateRequisite(id: number, data: AdminRequisiteRequest): Promise<AdminRequisite> {
+  const res = await authPut<AdminRequisite>("admin", `/admin/requisites/${id}`, data);
+  return res.data;
+}
+
+export async function deleteRequisite(id: number): Promise<void> {
+  await authDel("admin", `/admin/requisites/${id}`);
 }

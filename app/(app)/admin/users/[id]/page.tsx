@@ -16,6 +16,7 @@ import {
 import { ApiError } from "@/lib/api";
 import { Spinner } from "@/app/components/Spinner";
 import { Skeleton } from "@/app/components/Skeleton";
+import { maskPhone } from "@/lib/format";
 
 export default function AdminUserDetailPage() {
   const t = useTranslations("adminUsers");
@@ -205,7 +206,7 @@ export default function AdminUserDetailPage() {
           </div>
           <div>
             <p className="text-xs text-muted mb-0.5">{t("colPhone")}</p>
-            <p className="font-medium text-primary">{detail.phone}</p>
+            <p className="font-medium text-primary">{maskPhone(detail.phone)}</p>
           </div>
           <div>
             <p className="text-xs text-muted mb-0.5">{t("colRole")}</p>

@@ -280,7 +280,9 @@
     "cancelBtn": "Отмена",
     "errCategoryRequired": "Категория обязательна.",
     "errPassportSeries": "Серия паспорта должна содержать 2 заглавные буквы (например: AA).",
-    "errPassportNumber": "Номер паспорта должен содержать ровно 7 цифр."
+    "errPassportNumber": "Номер паспорта должен содержать ровно 7 цифр.",
+    "requisitesTitle": "Реквизиты",
+    "requisitesEmpty": "Реквизиты не назначены"
   },
   "adminApplications": {
     "pageTitle": "Заявки",
@@ -386,6 +388,7 @@
       "users": "Пользователи",
       "creators": "Креаторы",
       "categories": "Категории",
+      "requisites": "Реквизиты",
       "occasions": "Даты",
       "promotions": "Акции",
       "applications": "Заявки",
@@ -496,6 +499,19 @@
       "fieldNameEn": "Название (EN)",
       "fieldIcon": "URL иконки (необязательно)",
       "archiveConfirm": "Подтвердите архивирование категории «{name}»?"
+    },
+    "requisites": {
+      "title": "Каталог реквизитов",
+      "colName": "Название",
+      "colEmoji": "Эмодзи",
+      "emptyState": "Реквизиты отсутствуют",
+      "createTitle": "Добавить реквизит",
+      "editTitle": "Редактировать реквизит",
+      "fieldName": "Название",
+      "fieldEmoji": "Эмодзи (необязательно)",
+      "deleteConfirm": "Удалить реквизит \"{name}\"?",
+      "loadError": "Не удалось загрузить реквизиты",
+      "saveError": "Не удалось сохранить реквизит"
     }
   }
 }

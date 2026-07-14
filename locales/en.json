@@ -346,7 +346,9 @@
     "cancelBtn": "Cancel",
     "errCategoryRequired": "Category is required.",
     "errPassportSeries": "Passport series must be 2 uppercase letters (e.g. AA).",
-    "errPassportNumber": "Passport number must be exactly 7 digits."
+    "errPassportNumber": "Passport number must be exactly 7 digits.",
+    "requisitesTitle": "Requisites",
+    "requisitesEmpty": "No requisites assigned"
   },
   "adminOrders": {
     "pageTitle": "Orders",
@@ -389,6 +391,7 @@
       "users": "Users",
       "creators": "Creators",
       "categories": "Categories",
+      "requisites": "Requisites",
       "occasions": "Occasions",
       "promotions": "Promotions",
       "applications": "Applications",
@@ -499,6 +502,19 @@
       "fieldNameEn": "Name (EN)",
       "fieldIcon": "Icon URL (optional)",
       "archiveConfirm": "Archive category \"{name}\"?"
+    },
+    "requisites": {
+      "title": "Requisite Catalog",
+      "colName": "Name",
+      "colEmoji": "Emoji",
+      "emptyState": "No requisites yet",
+      "createTitle": "Add requisite",
+      "editTitle": "Edit requisite",
+      "fieldName": "Name",
+      "fieldEmoji": "Emoji (optional)",
+      "deleteConfirm": "Delete requisite \"{name}\"?",
+      "loadError": "Failed to load requisites",
+      "saveError": "Failed to save requisite"
     }
   }
 }

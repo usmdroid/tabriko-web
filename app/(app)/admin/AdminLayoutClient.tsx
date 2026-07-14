@@ -17,6 +17,7 @@ import {
   Tag,
   CalendarDays,
   Megaphone,
+  ListChecks,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { getSession, clearSession, StaffSession } from "@/lib/admin-api";
@@ -32,6 +33,7 @@ const NAV = [
   { href: "/admin", key: "users", icon: Users, exact: true, superAdminOnly: false },
   { href: "/admin/creators", key: "creators", icon: Star, exact: false, superAdminOnly: false },
   { href: "/admin/categories", key: "categories", icon: Tag, exact: false, superAdminOnly: false },
+  { href: "/admin/requisites", key: "requisites", icon: ListChecks, exact: false, superAdminOnly: false },
   { href: "/admin/occasions", key: "occasions", icon: CalendarDays, exact: false, superAdminOnly: false },
   { href: "/admin/promotions", key: "promotions", icon: Megaphone, exact: false, superAdminOnly: false },
   { href: "/admin/applications", key: "applications", icon: FileText, exact: false, superAdminOnly: false },

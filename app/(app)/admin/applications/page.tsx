@@ -14,6 +14,7 @@ import {
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
 import { isAbortError } from "@/lib/hooks";
+import { maskPhone } from "@/lib/format";
 import { Skeleton } from "@/app/components/Skeleton";
 
 const ALL_STATUSES: Array<{ key: AdminApplicationStatus | "ALL"; labelKey: string }> = [
@@ -170,7 +171,7 @@ export default function AdminApplicationsPage() {
                         {item.name ?? "—"}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-muted">{item.phone}</td>
+                    <td className="px-4 py-3 text-muted">{maskPhone(item.phone)}</td>
                     <td className="px-4 py-3 text-muted">
                       {item.categoryName ?? item.otherText ?? "—"}
                     </td>

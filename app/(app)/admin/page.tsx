@@ -13,6 +13,7 @@ import {
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
 import { useDebouncedValue, isAbortError } from "@/lib/hooks";
+import { maskPhone } from "@/lib/format";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Spinner } from "@/app/components/Spinner";
 
@@ -151,7 +152,7 @@ export default function AdminUsersPage() {
                     onClick={() => router.push(`/admin/users/${user.id}`)}
                   >
                     <td className="px-4 py-3 font-medium text-primary">{user.name}</td>
-                    <td className="px-4 py-3 text-muted">{user.phone}</td>
+                    <td className="px-4 py-3 text-muted">{maskPhone(user.phone)}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${

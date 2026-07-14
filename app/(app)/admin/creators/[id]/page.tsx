@@ -16,6 +16,7 @@ import {
 import { ApiError } from "@/lib/api";
 import { Spinner } from "@/app/components/Spinner";
 import { Skeleton } from "@/app/components/Skeleton";
+import { maskPhone } from "@/lib/format";
 
 const TIER_LABEL: Record<CreatorTier, string> = {
   STANDARD: "Standart",
@@ -207,7 +208,7 @@ export default function AdminCreatorDetailPage() {
           </div>
           <div>
             <p className="text-xs text-muted mb-0.5">{t("colPhone")}</p>
-            <p className="font-medium text-primary">{detail.phone}</p>
+            <p className="font-medium text-primary">{maskPhone(detail.phone)}</p>
           </div>
           <div>
             <p className="text-xs text-muted mb-0.5">{t("colCategory")}</p>
@@ -265,7 +266,7 @@ export default function AdminCreatorDetailPage() {
               >
                 <div className="flex items-center gap-2 text-sm min-w-0">
                   <Phone size={13} className="text-muted shrink-0" />
-                  <span className="font-medium text-primary">{contact.phone}</span>
+                  <span className="font-medium text-primary">{maskPhone(contact.phone)}</span>
                   {contact.label && (
                     <span className="text-xs text-muted truncate">({contact.label})</span>
                   )}
@@ -286,6 +287,25 @@ export default function AdminCreatorDetailPage() {
               </div>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* Rekvizitlar */}
+      <div className="rounded-xl border border-line bg-card overflow-hidden mb-4">
+        <div className="px-4 py-3 border-b border-line">
+          <span className="text-sm font-medium text-primary">{t("requisitesTitle")}</span>
+        </div>
+        {detail.requisites.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-muted text-center">{t("requisitesEmpty")}</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {detail.requisites.map((r, i) => (
+              <li key={i} className="flex items-center gap-2 px-4 py-3 text-sm">
+                {r.emoji && <span className="text-base">{r.emoji}</span>}
+                <span className="text-primary">{r.name}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 

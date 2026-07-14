@@ -280,7 +280,9 @@
     "cancelBtn": "Bekor qilish",
     "errCategoryRequired": "Kategoriya tanlanishi shart.",
     "errPassportSeries": "Pasport seriyasi 2 ta KATTA harf bo'lishi kerak (masalan: AA).",
-    "errPassportNumber": "Pasport raqami aynan 7 ta raqam bo'lishi kerak."
+    "errPassportNumber": "Pasport raqami aynan 7 ta raqam bo'lishi kerak.",
+    "requisitesTitle": "Rekvizitlar",
+    "requisitesEmpty": "Rekvizitlar biriktirilmagan"
   },
   "adminApplications": {
     "pageTitle": "Arizalar",
@@ -386,6 +388,7 @@
       "users": "Foydalanuvchilar",
       "creators": "Kreatorlar",
       "categories": "Kategoriyalar",
+      "requisites": "Rekvizitlar",
       "occasions": "Sanalar",
       "promotions": "Aksiyalar",
       "applications": "Arizalar",
@@ -455,7 +458,7 @@
       "fieldCategory": "Kategoriya (ixtiyoriy)",
       "fieldSort": "Tartib raqami",
       "fieldActive": "Faol",
-      "deleteConfirm": "“{title}” sanasini o'chirishni tasdiqlaysizmi?"
+      "deleteConfirm": "\"{title}\" sanasini o'chirishni tasdiqlaysizmi?"
     },
     "promotions": {
       "title": "Aksiyalar",
@@ -477,7 +480,7 @@
       "fieldCategoryHint": "Bosilganda mos kategoriya bo'yicha filtrlaydi.",
       "fieldSort": "Tartib raqami",
       "fieldActive": "Faol",
-      "deleteConfirm": "“{title}” aksiyasini o'chirishni tasdiqlaysizmi?"
+      "deleteConfirm": "\"{title}\" aksiyasini o'chirishni tasdiqlaysizmi?"
     },
     "categories": {
       "title": "Kategoriyalar",
@@ -495,7 +498,20 @@
       "fieldNameRu": "Nomi (RU)",
       "fieldNameEn": "Nomi (EN)",
       "fieldIcon": "Icon URL (ixtiyoriy)",
-      "archiveConfirm": "“{name}” kategoriyasini arxivlashni tasdiqlaysizmi?"
+      "archiveConfirm": "\"{name}\" kategoriyasini arxivlashni tasdiqlaysizmi?"
+    },
+    "requisites": {
+      "title": "Rekvizitlar katalogi",
+      "colName": "Nomi",
+      "colEmoji": "Emoji",
+      "emptyState": "Rekvizitlar yo'q",
+      "createTitle": "Rekvizit qo'shish",
+      "editTitle": "Rekvizitni tahrirlash",
+      "fieldName": "Nomi",
+      "fieldEmoji": "Emoji (ixtiyoriy)",
+      "deleteConfirm": "\"{name}\" rekvizitini o'chirish?",
+      "loadError": "Rekvizitlarni yuklashda xatolik",
+      "saveError": "Rekvizitni saqlashda xatolik"
     }
   }
 }
