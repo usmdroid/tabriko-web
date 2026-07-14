@@ -20,7 +20,6 @@ import {
 import { ApiError } from "@/lib/api";
 import { Spinner } from "@/app/components/Spinner";
 import { Skeleton } from "@/app/components/Skeleton";
-import { maskPhone } from "@/lib/format";
 
 const STATUS_COLORS: Record<AdminApplicationStatus, string> = {
   SUBMITTED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
@@ -260,7 +259,7 @@ export default function AdminApplicationDetailPage() {
           </div>
           <div>
             <p className="text-xs text-muted mb-0.5">{t("colPhone")}</p>
-            <p className="font-medium text-primary">{maskPhone(detail.phone)}</p>
+            <p className="font-medium text-primary">{detail.phone}</p>
           </div>
           <div>
             <p className="text-xs text-muted mb-0.5">{t("colActivity")}</p>

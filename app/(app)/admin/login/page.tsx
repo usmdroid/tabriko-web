@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { login, sendOtp, resetPassword, saveSession } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
+import { formatUzPhoneInput, normalizeUzPhone } from "@/lib/phone";
 import { Spinner } from "@/app/components/Spinner";
 import { BRAND } from "@/lib/brand";
 
@@ -36,7 +37,7 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
     try {
-      const session = await login(phone, password);
+      const session = await login(normalizeUzPhone(phone), password);
       saveSession(session);
       router.replace("/admin");
     } catch (err) {
@@ -51,7 +52,7 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
     try {
-      await sendOtp(resetPhone);
+      await sendOtp(normalizeUzPhone(resetPhone));
       setStep("reset-code");
     } catch (err) {
       handleApiError(err);
@@ -65,7 +66,7 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
     try {
-      await resetPassword(resetPhone, code, newPassword);
+      await resetPassword(normalizeUzPhone(resetPhone), code, newPassword);
       setResetSuccess(true);
       setPhone(resetPhone);
       setPassword("");
@@ -118,8 +119,8 @@ export default function AdminLoginPage() {
                   type="tel"
                   autoComplete="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+998901234567"
+                  onChange={(e) => setPhone(formatUzPhoneInput(e.target.value))}
+                  placeholder="+998 90 123 45 67"
                   required
                   className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent"
                 />
@@ -175,8 +176,8 @@ export default function AdminLoginPage() {
                   type="tel"
                   autoComplete="tel"
                   value={resetPhone}
-                  onChange={(e) => setResetPhone(e.target.value)}
-                  placeholder="+998901234567"
+                  onChange={(e) => setResetPhone(formatUzPhoneInput(e.target.value))}
+                  placeholder="+998 90 123 45 67"
                   required
                   className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent"
                 />

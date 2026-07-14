@@ -13,6 +13,7 @@ import {
   CreatorTier,
 } from "@/lib/admin-api";
 import { ApiError, getCategories, Category } from "@/lib/api";
+import { formatUzPhoneInput, normalizeUzPhone } from "@/lib/phone";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Spinner } from "@/app/components/Spinner";
 
@@ -102,7 +103,7 @@ export default function AdminCreatorsPage() {
     try {
       await addCreator({
         name: newName,
-        phone: newPhone,
+        phone: normalizeUzPhone(newPhone),
         categoryId: newCategoryId,
         tier: newTier,
         ...(series && number ? { passportSeries: series, passportNumber: number } : {}),
@@ -290,8 +291,8 @@ export default function AdminCreatorsPage() {
                 type="text"
                 required
                 value={newPhone}
-                onChange={(e) => setNewPhone(e.target.value)}
-                placeholder="+998901234567"
+                onChange={(e) => setNewPhone(formatUzPhoneInput(e.target.value))}
+                placeholder="+998 90 123 45 67"
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
               />
             </div>

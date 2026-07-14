@@ -14,9 +14,9 @@ import {
   CreatorTier,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
+import { formatUzPhoneInput, normalizeUzPhone } from "@/lib/phone";
 import { Spinner } from "@/app/components/Spinner";
 import { Skeleton } from "@/app/components/Skeleton";
-import { maskPhone } from "@/lib/format";
 
 const TIER_LABEL: Record<CreatorTier, string> = {
   STANDARD: "Standart",
@@ -104,7 +104,7 @@ export default function AdminCreatorDetailPage() {
   async function handleAddContact(e: React.FormEvent) {
     e.preventDefault();
     if (!detail) return;
-    const phone = newPhone.trim();
+    const phone = normalizeUzPhone(newPhone);
     const label = newLabel.trim() || undefined;
     if (!PHONE_RE.test(phone)) {
       setAddError("Telefon raqami noto'g'ri formatda. Misol: +998901234567");
@@ -208,7 +208,7 @@ export default function AdminCreatorDetailPage() {
           </div>
           <div>
             <p className="text-xs text-muted mb-0.5">{t("colPhone")}</p>
-            <p className="font-medium text-primary">{maskPhone(detail.phone)}</p>
+            <p className="font-medium text-primary">{detail.phone}</p>
           </div>
           <div>
             <p className="text-xs text-muted mb-0.5">{t("colCategory")}</p>
@@ -266,7 +266,7 @@ export default function AdminCreatorDetailPage() {
               >
                 <div className="flex items-center gap-2 text-sm min-w-0">
                   <Phone size={13} className="text-muted shrink-0" />
-                  <span className="font-medium text-primary">{maskPhone(contact.phone)}</span>
+                  <span className="font-medium text-primary">{contact.phone}</span>
                   {contact.label && (
                     <span className="text-xs text-muted truncate">({contact.label})</span>
                   )}
@@ -344,8 +344,8 @@ export default function AdminCreatorDetailPage() {
                 type="text"
                 required
                 value={newPhone}
-                onChange={(e) => setNewPhone(e.target.value)}
-                placeholder="+998901234567"
+                onChange={(e) => setNewPhone(formatUzPhoneInput(e.target.value))}
+                placeholder="+998 90 123 45 67"
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
               />
             </div>
