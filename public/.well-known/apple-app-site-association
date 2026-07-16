@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.uz.tabriko.app",
+        "paths": ["/c/*"]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAMID.uz.tabriko.app"]
+  }
+}
