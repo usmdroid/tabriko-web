@@ -9,6 +9,7 @@ import {
   fetchCreators,
   addCreator,
   verifyCreator,
+  uploadCreatorAvatar,
   AdminCreator,
   CreatorTier,
 } from "@/lib/admin-api";
@@ -42,6 +43,8 @@ export default function AdminCreatorsPage() {
   const [newTier, setNewTier] = useState<CreatorTier>("STANDARD");
   const [newPassportSeries, setNewPassportSeries] = useState("");
   const [newPassportNumber, setNewPassportNumber] = useState("");
+  const [newAvatar, setNewAvatar] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -80,6 +83,15 @@ export default function AdminCreatorsPage() {
     }
   }
 
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setAddError(t("errAvatarType")); return; }
+    if (file.size > 5 * 1024 * 1024) { setAddError(t("errAvatarSize")); return; }
+    setNewAvatar(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  }
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!newCategoryId) {
@@ -101,13 +113,22 @@ export default function AdminCreatorsPage() {
     setAdding(true);
     setAddError("");
     try {
-      await addCreator({
+      const created = await addCreator({
         name: newName,
         phone: normalizeUzPhone(newPhone),
         categoryId: newCategoryId,
         tier: newTier,
         ...(series && number ? { passportSeries: series, passportNumber: number } : {}),
       });
+      if (newAvatar && created?.id) {
+        try {
+          await uploadCreatorAvatar(created.id, newAvatar);
+        } catch (err) {
+          setAddError(err instanceof ApiError ? err.message : t("errAvatarUpload"));
+          await load(); // creator exists in list without avatar; keep modal open
+          return;
+        }
+      }
       setShowAdd(false);
       setNewName("");
       setNewPhone("");
@@ -115,6 +136,9 @@ export default function AdminCreatorsPage() {
       setNewTier("STANDARD");
       setNewPassportSeries("");
       setNewPassportNumber("");
+      setNewAvatar(null);
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+      setAvatarPreview(null);
       await load();
     } catch (err) {
       if (err instanceof ApiError) setAddError(err.message);
@@ -182,13 +206,20 @@ export default function AdminCreatorsPage() {
                     onClick={() => router.push(`/admin/creators/${creator.id}`)}
                   >
                     <td className="px-4 py-3 font-medium text-primary">
-                      <Link
-                        href={`/admin/creators/${creator.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="hover:text-accent transition-colors"
-                      >
-                        {creator.name}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        {creator.avatarUrl ? (
+                          <img src={creator.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-card border border-line shrink-0" />
+                        )}
+                        <Link
+                          href={`/admin/creators/${creator.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="hover:text-accent transition-colors"
+                        >
+                          {creator.name}
+                        </Link>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-muted">{creator.category}</td>
                     <td className="px-4 py-3">
@@ -295,6 +326,35 @@ export default function AdminCreatorsPage() {
                 placeholder="+998 90 123 45 67"
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
               />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted">
+                {t("fieldAvatar")} <span className="text-muted">(optional)</span>
+              </label>
+              {avatarPreview ? (
+                <div className="flex items-center gap-2">
+                  <img src={avatarPreview} alt="" className="w-16 h-16 rounded-lg object-cover border border-line shrink-0" />
+                  <div className="flex flex-col gap-1">
+                    <label className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-xs text-muted hover:border-accent/50 hover:text-accent transition-colors text-center">
+                      {t("avatarChange")}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => { setNewAvatar(null); if (avatarPreview) URL.revokeObjectURL(avatarPreview); setAvatarPreview(null); }}
+                      className="rounded-lg border border-line px-3 py-1.5 text-xs text-muted hover:border-red-400 hover:text-red-500 transition-colors"
+                    >
+                      {t("avatarRemove")}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label className="cursor-pointer flex items-center justify-center rounded-lg border border-dashed border-line px-3 py-4 text-xs text-muted hover:border-accent/50 hover:text-accent transition-colors">
+                  {t("avatarPickPrompt")}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                </label>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">

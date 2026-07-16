@@ -347,6 +347,13 @@
     "errCategoryRequired": "Category is required.",
     "errPassportSeries": "Passport series must be 2 uppercase letters (e.g. AA).",
     "errPassportNumber": "Passport number must be exactly 7 digits.",
+    "fieldAvatar": "Photo",
+    "avatarChange": "Change",
+    "avatarRemove": "Remove",
+    "avatarPickPrompt": "Click to pick a photo (optional)",
+    "errAvatarType": "Only image files are allowed.",
+    "errAvatarSize": "Image must be under 5 MB.",
+    "errAvatarUpload": "Creator created but avatar upload failed.",
     "requisitesTitle": "Requisites",
     "requisitesEmpty": "No requisites assigned"
   },

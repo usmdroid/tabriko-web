@@ -281,6 +281,13 @@
     "errCategoryRequired": "Категория обязательна.",
     "errPassportSeries": "Серия паспорта должна содержать 2 заглавные буквы (например: AA).",
     "errPassportNumber": "Номер паспорта должен содержать ровно 7 цифр.",
+    "fieldAvatar": "Фото",
+    "avatarChange": "Изменить",
+    "avatarRemove": "Удалить",
+    "avatarPickPrompt": "Нажмите, чтобы выбрать фото (необязательно)",
+    "errAvatarType": "Допускаются только файлы изображений.",
+    "errAvatarSize": "Размер изображения должен быть менее 5 МБ.",
+    "errAvatarUpload": "Криейтор создан, но загрузка фото не удалась.",
     "requisitesTitle": "Реквизиты",
     "requisitesEmpty": "Реквизиты не назначены"
   },

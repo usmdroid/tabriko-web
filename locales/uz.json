@@ -281,6 +281,13 @@
     "errCategoryRequired": "Kategoriya tanlanishi shart.",
     "errPassportSeries": "Pasport seriyasi 2 ta KATTA harf bo'lishi kerak (masalan: AA).",
     "errPassportNumber": "Pasport raqami aynan 7 ta raqam bo'lishi kerak.",
+    "fieldAvatar": "Rasm",
+    "avatarChange": "O'zgartirish",
+    "avatarRemove": "O'chirish",
+    "avatarPickPrompt": "Rasm tanlash uchun bosing (ixtiyoriy)",
+    "errAvatarType": "Faqat rasm fayllari ruxsat etilgan.",
+    "errAvatarSize": "Rasm hajmi 5 MB dan oshmasligi kerak.",
+    "errAvatarUpload": "Kreator yaratildi, lekin rasm yuklanmadi.",
     "requisitesTitle": "Rekvizitlar",
     "requisitesEmpty": "Rekvizitlar biriktirilmagan"
   },

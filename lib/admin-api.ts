@@ -1,5 +1,5 @@
 import { post, ApiError } from "./api";
-import { authGet, authPost, authPatch, authPut, authDel } from "./auth-fetch";
+import { authGet, authPost, authPatch, authPut, authDel, authPostForm } from "./auth-fetch";
 import { getSession as getSessionInfo, saveSession as saveSessionInfo, clearSession as clearSessionInfo, type SessionInfo } from "./session";
 import { getCurrentLocale, INTL_LOCALE_TAG } from "./locale";
 
@@ -65,6 +65,7 @@ export interface AdminCreator {
   contacts: AdminCreatorContact[];
   accountStatus?: string;
   requisites: AdminRequisiteRef[];
+  avatarUrl?: string;
 }
 
 export interface AddCreatorRequest {
@@ -194,6 +195,7 @@ interface BackendCreatorResponse {
   status?: string;
   contacts?: AdminCreatorContact[];
   requisites?: Array<{ name: string; emoji?: string }>;
+  avatarUrl?: string;
 }
 
 interface BackendOrderResponse {
@@ -290,6 +292,7 @@ function mapCreator(c: BackendCreatorResponse): AdminCreator {
     contacts: c.contacts ?? [],
     accountStatus: c.status,
     requisites: c.requisites ?? [],
+    avatarUrl: c.avatarUrl ?? undefined,
   };
 }
 
@@ -456,8 +459,16 @@ export async function fetchCreators(signal?: AbortSignal): Promise<AdminCreator[
   return (res.data ?? []).map(mapCreator);
 }
 
-export async function addCreator(data: AddCreatorRequest) {
-  return authPost("admin", "/admin/creators", data);
+export async function addCreator(data: AddCreatorRequest): Promise<AdminCreator> {
+  const res = await authPost<BackendCreatorResponse>("admin", "/admin/creators", data);
+  return mapCreator(res.data as BackendCreatorResponse);
+}
+
+export async function uploadCreatorAvatar(id: string, file: File): Promise<AdminCreator> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await authPostForm<BackendCreatorResponse>("admin", `/admin/creators/${id}/avatar`, form);
+  return mapCreator(res.data as BackendCreatorResponse);
 }
 
 export async function verifyCreator(id: string) {
