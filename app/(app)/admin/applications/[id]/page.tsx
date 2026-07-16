@@ -4,11 +4,10 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { X, ExternalLink, Trash2, RefreshCw } from "lucide-react";
+import { X, ExternalLink, Trash2, RefreshCw, Send } from "lucide-react";
 import {
   fetchApplication,
   reviewApplication,
-  requestApplicationInfo,
   rejectApplication,
   confirmInstagram,
   messageApplication,
@@ -29,7 +28,7 @@ const STATUS_COLORS: Record<AdminApplicationStatus, string> = {
   REJECTED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
-type ModalType = "requestInfo" | "reject" | "message" | null;
+type ModalType = "reject" | null;
 
 interface ActionModalProps {
   type: ModalType;
@@ -44,19 +43,6 @@ function ActionModal({ type, onClose, onSubmit }: ActionModalProps) {
   const [err, setErr] = useState("");
 
   if (!type) return null;
-
-  const titleKey =
-    type === "requestInfo"
-      ? "modalRequestInfoTitle"
-      : type === "reject"
-      ? "modalRejectTitle"
-      : "modalMessageTitle";
-  const labelKey =
-    type === "requestInfo"
-      ? "modalRequestInfoLabel"
-      : type === "reject"
-      ? "modalRejectLabel"
-      : "modalMessageLabel";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -86,7 +72,7 @@ function ActionModal({ type, onClose, onSubmit }: ActionModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-primary">{t(titleKey)}</h2>
+          <h2 className="text-base font-semibold text-primary">{t("modalRejectTitle")}</h2>
           <button type="button" onClick={onClose} className="text-muted hover:text-primary">
             <X size={18} />
           </button>
@@ -99,7 +85,7 @@ function ActionModal({ type, onClose, onSubmit }: ActionModalProps) {
         )}
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted">{t(labelKey)}</label>
+          <label className="text-xs font-medium text-muted">{t("modalRejectLabel")}</label>
           <textarea
             required
             rows={3}
@@ -142,6 +128,9 @@ export default function AdminApplicationDetailPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
   const [modal, setModal] = useState<ModalType>(null);
+  const [chatInput, setChatInput] = useState("");
+  const [sendingChat, setSendingChat] = useState(false);
+  const [chatError, setChatError] = useState("");
 
   const load = useCallback(async () => {
     if (!params.id) return;
@@ -187,6 +176,23 @@ export default function AdminApplicationDetailPage() {
       if (e instanceof ApiError) setActionError(e.message);
       else setActionError(t("error"));
       setBusy(null);
+    }
+  }
+
+  async function handleSendChat(e: React.FormEvent) {
+    e.preventDefault();
+    if (!chatInput.trim() || sendingChat || !detail) return;
+    setSendingChat(true);
+    setChatError("");
+    try {
+      await messageApplication(detail.id, chatInput.trim());
+      setChatInput("");
+      await load();
+    } catch (err) {
+      if (err instanceof ApiError) setChatError(err.message);
+      else setChatError(t("error"));
+    } finally {
+      setSendingChat(false);
     }
   }
 
@@ -415,7 +421,7 @@ export default function AdminApplicationDetailPage() {
       {/* Actions */}
       {status !== "APPROVED" && status !== "REJECTED" && (
         <div className="surface-card p-5 mb-4">
-          <p className="text-sm font-semibold text-primary mb-3">{t("actions")}</p>
+          <p className="text-sm font-semibold text-primary mb-3">{t("sectionHolat")}</p>
           <div className="flex flex-wrap gap-2">
             {status === "SUBMITTED" && (
               <button
@@ -426,16 +432,7 @@ export default function AdminApplicationDetailPage() {
                 className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs font-medium text-muted hover:border-blue-500 hover:text-blue-600 transition-colors disabled:opacity-50"
               >
                 {busy === "review" && <Spinner size={11} />}
-                {t("actionReview")}
-              </button>
-            )}
-
-            {(status === "SUBMITTED" || status === "UNDER_REVIEW") && (
-              <button
-                onClick={() => setModal("requestInfo")}
-                className="rounded-lg border border-line px-3 py-2 text-xs font-medium text-muted hover:border-amber-500 hover:text-amber-600 transition-colors"
-              >
-                {t("actionRequestInfo")}
+                {t("actionUnderReview")}
               </button>
             )}
 
@@ -444,13 +441,6 @@ export default function AdminApplicationDetailPage() {
               className="rounded-lg border border-line px-3 py-2 text-xs font-medium text-muted hover:border-red-500 hover:text-red-600 transition-colors"
             >
               {t("actionReject")}
-            </button>
-
-            <button
-              onClick={() => setModal("message")}
-              className="rounded-lg border border-line px-3 py-2 text-xs font-medium text-muted hover:border-accent/50 hover:text-accent transition-colors"
-            >
-              {t("actionMessage")}
             </button>
 
             {(status === "UNDER_REVIEW" || status === "INFO_REQUESTED") && (
@@ -485,9 +475,9 @@ export default function AdminApplicationDetailPage() {
       <div className="surface-card p-5">
         <p className="text-sm font-semibold text-primary mb-3">{t("threadTitle")}</p>
         {(detail.messages?.length ?? 0) === 0 ? (
-          <p className="text-xs text-muted">{t("noMessages")}</p>
+          <p className="text-xs text-muted mb-4">{t("noMessages")}</p>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 mb-4">
             {detail.messages.map((msg) => (
               <div
                 key={msg.id}
@@ -516,6 +506,38 @@ export default function AdminApplicationDetailPage() {
             ))}
           </div>
         )}
+
+        {chatError && (
+          <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 mb-2">
+            {chatError}
+          </p>
+        )}
+        <form
+          onSubmit={handleSendChat}
+          className="flex gap-2 items-end border-t border-line pt-3"
+        >
+          <textarea
+            rows={2}
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder={t("chatPlaceholder")}
+            disabled={sendingChat}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
+            className="flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent resize-none disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={sendingChat || !chatInput.trim()}
+            className="flex items-center justify-center h-9 w-9 rounded-lg bg-accent text-white hover:bg-hover transition-colors disabled:opacity-60 flex-shrink-0"
+          >
+            {sendingChat ? <Spinner size={15} /> : <Send size={15} />}
+          </button>
+        </form>
       </div>
 
       {/* Action modals */}
@@ -523,13 +545,7 @@ export default function AdminApplicationDetailPage() {
         type={modal}
         onClose={() => setModal(null)}
         onSubmit={async (text) => {
-          if (modal === "requestInfo") {
-            await requestApplicationInfo(detail.id, text);
-          } else if (modal === "reject") {
-            await rejectApplication(detail.id, text);
-          } else if (modal === "message") {
-            await messageApplication(detail.id, text);
-          }
+          await rejectApplication(detail.id, text);
           await load();
         }}
       />

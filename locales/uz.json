@@ -289,7 +289,16 @@
     "errAvatarSize": "Rasm hajmi 5 MB dan oshmasligi kerak.",
     "errAvatarUpload": "Kreator yaratildi, lekin rasm yuklanmadi.",
     "requisitesTitle": "Rekvizitlar",
-    "requisitesEmpty": "Rekvizitlar biriktirilmagan"
+    "requisitesEmpty": "Rekvizitlar biriktirilmagan",
+    "fieldBanner": "Muqova",
+    "bannerChange": "O'zgartirish",
+    "bannerRemove": "O'chirish",
+    "bannerPickPrompt": "Muqova rasmini tanlash uchun bosing (ixtiyoriy)",
+    "errBannerType": "Faqat rasm fayllari ruxsat etilgan.",
+    "errBannerSize": "Rasm hajmi 5 MB dan oshmasligi kerak.",
+    "errBannerUpload": "Muqova yuklanmadi.",
+    "imagesTitle": "Rasmlar",
+    "imagesSave": "Saqlash"
   },
   "adminApplications": {
     "pageTitle": "Arizalar",
@@ -352,7 +361,10 @@
     "usernameToConfirmLabel": "Instagram foydalanuvchi nomi",
     "usernameConfirmHint": "Direct xabar aynan shu @username dan kelganligini tekshiring — bu akkount egaligini tasdiqlaydi",
     "actions": "Amallar",
-    "fileLabel": "Fayl"
+    "fileLabel": "Fayl",
+    "sectionHolat": "Holat",
+    "actionUnderReview": "Ko'rib chiqilmoqda",
+    "chatPlaceholder": "Xabar yozing..."
   },
   "adminOrders": {
     "pageTitle": "Buyurtmalar",

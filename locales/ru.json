@@ -289,7 +289,16 @@
     "errAvatarSize": "Размер изображения должен быть менее 5 МБ.",
     "errAvatarUpload": "Криейтор создан, но загрузка фото не удалась.",
     "requisitesTitle": "Реквизиты",
-    "requisitesEmpty": "Реквизиты не назначены"
+    "requisitesEmpty": "Реквизиты не назначены",
+    "fieldBanner": "Обложка",
+    "bannerChange": "Изменить",
+    "bannerRemove": "Удалить",
+    "bannerPickPrompt": "Нажмите, чтобы выбрать обложку (необязательно)",
+    "errBannerType": "Допускаются только файлы изображений.",
+    "errBannerSize": "Изображение должно быть менее 5 МБ.",
+    "errBannerUpload": "Не удалось загрузить обложку.",
+    "imagesTitle": "Фотографии",
+    "imagesSave": "Сохранить"
   },
   "adminApplications": {
     "pageTitle": "Заявки",
@@ -352,7 +361,10 @@
     "usernameToConfirmLabel": "Имя пользователя Instagram",
     "usernameConfirmHint": "Убедитесь, что Direct-сообщение пришло именно с этого @username — это подтверждает владение аккаунтом",
     "actions": "Действия",
-    "fileLabel": "Файл"
+    "fileLabel": "Файл",
+    "sectionHolat": "Статус",
+    "actionUnderReview": "На рассмотрении",
+    "chatPlaceholder": "Напишите сообщение..."
   },
   "adminOrders": {
     "pageTitle": "Заказы",

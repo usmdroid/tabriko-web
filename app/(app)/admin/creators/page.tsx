@@ -10,6 +10,7 @@ import {
   addCreator,
   verifyCreator,
   uploadCreatorAvatar,
+  uploadCreatorBanner,
   AdminCreator,
   CreatorTier,
 } from "@/lib/admin-api";
@@ -45,6 +46,8 @@ export default function AdminCreatorsPage() {
   const [newPassportNumber, setNewPassportNumber] = useState("");
   const [newAvatar, setNewAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [newBanner, setNewBanner] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -92,6 +95,15 @@ export default function AdminCreatorsPage() {
     setAvatarPreview(URL.createObjectURL(file));
   }
 
+  function handleBannerChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setAddError(t("errBannerType")); return; }
+    if (file.size > 5 * 1024 * 1024) { setAddError(t("errBannerSize")); return; }
+    setNewBanner(file);
+    setBannerPreview(URL.createObjectURL(file));
+  }
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!newCategoryId) {
@@ -129,6 +141,15 @@ export default function AdminCreatorsPage() {
           return;
         }
       }
+      if (newBanner && created?.id) {
+        try {
+          await uploadCreatorBanner(created.id, newBanner);
+        } catch (err) {
+          setAddError(err instanceof ApiError ? err.message : t("errBannerUpload"));
+          await load();
+          return;
+        }
+      }
       setShowAdd(false);
       setNewName("");
       setNewPhone("");
@@ -139,6 +160,9 @@ export default function AdminCreatorsPage() {
       setNewAvatar(null);
       if (avatarPreview) URL.revokeObjectURL(avatarPreview);
       setAvatarPreview(null);
+      setNewBanner(null);
+      if (bannerPreview) URL.revokeObjectURL(bannerPreview);
+      setBannerPreview(null);
       await load();
     } catch (err) {
       if (err instanceof ApiError) setAddError(err.message);
@@ -353,6 +377,36 @@ export default function AdminCreatorsPage() {
                 <label className="cursor-pointer flex items-center justify-center rounded-lg border border-dashed border-line px-3 py-4 text-xs text-muted hover:border-accent/50 hover:text-accent transition-colors">
                   {t("avatarPickPrompt")}
                   <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                </label>
+              )}
+            </div>
+
+            {/* Banner picker */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted">
+                {t("fieldBanner")} <span className="text-muted">(optional)</span>
+              </label>
+              {bannerPreview ? (
+                <div className="flex flex-col gap-1.5">
+                  <img src={bannerPreview} alt="" className="aspect-video w-full object-cover rounded-lg border border-line" />
+                  <div className="flex gap-2">
+                    <label className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-xs text-muted hover:border-accent/50 hover:text-accent transition-colors text-center">
+                      {t("bannerChange")}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => { setNewBanner(null); if (bannerPreview) URL.revokeObjectURL(bannerPreview); setBannerPreview(null); }}
+                      className="rounded-lg border border-line px-3 py-1.5 text-xs text-muted hover:border-red-400 hover:text-red-500 transition-colors"
+                    >
+                      {t("bannerRemove")}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label className="cursor-pointer flex items-center justify-center rounded-lg border border-dashed border-line aspect-video w-full text-xs text-muted hover:border-accent/50 hover:text-accent transition-colors">
+                  {t("bannerPickPrompt")}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
                 </label>
               )}
             </div>

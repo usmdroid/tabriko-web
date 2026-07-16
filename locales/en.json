@@ -236,7 +236,10 @@
     "usernameToConfirmLabel": "Instagram username",
     "usernameConfirmHint": "Confirm the Direct message came from this exact @username — this proves account ownership",
     "actions": "Actions",
-    "fileLabel": "File"
+    "fileLabel": "File",
+    "sectionHolat": "Status",
+    "actionUnderReview": "Under Review",
+    "chatPlaceholder": "Write a message..."
   },
   "adminUsers": {
     "backToList": "← Users",
@@ -355,7 +358,16 @@
     "errAvatarSize": "Image must be under 5 MB.",
     "errAvatarUpload": "Creator created but avatar upload failed.",
     "requisitesTitle": "Requisites",
-    "requisitesEmpty": "No requisites assigned"
+    "requisitesEmpty": "No requisites assigned",
+    "fieldBanner": "Banner",
+    "bannerChange": "Change",
+    "bannerRemove": "Remove",
+    "bannerPickPrompt": "Click to pick a banner (optional)",
+    "errBannerType": "Only image files are allowed.",
+    "errBannerSize": "Image must be under 5 MB.",
+    "errBannerUpload": "Banner upload failed.",
+    "imagesTitle": "Images",
+    "imagesSave": "Save"
   },
   "adminOrders": {
     "pageTitle": "Orders",

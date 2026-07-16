@@ -66,6 +66,7 @@ export interface AdminCreator {
   accountStatus?: string;
   requisites: AdminRequisiteRef[];
   avatarUrl?: string;
+  bannerUrl?: string;
 }
 
 export interface AddCreatorRequest {
@@ -196,6 +197,7 @@ interface BackendCreatorResponse {
   contacts?: AdminCreatorContact[];
   requisites?: Array<{ name: string; emoji?: string }>;
   avatarUrl?: string;
+  bannerUrl?: string;
 }
 
 interface BackendOrderResponse {
@@ -293,6 +295,7 @@ function mapCreator(c: BackendCreatorResponse): AdminCreator {
     accountStatus: c.status,
     requisites: c.requisites ?? [],
     avatarUrl: c.avatarUrl ?? undefined,
+    bannerUrl: c.bannerUrl ?? undefined,
   };
 }
 
@@ -468,6 +471,13 @@ export async function uploadCreatorAvatar(id: string, file: File): Promise<Admin
   const form = new FormData();
   form.append("file", file);
   const res = await authPostForm<BackendCreatorResponse>("admin", `/admin/creators/${id}/avatar`, form);
+  return mapCreator(res.data as BackendCreatorResponse);
+}
+
+export async function uploadCreatorBanner(id: string, file: File): Promise<AdminCreator> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await authPostForm<BackendCreatorResponse>("admin", `/admin/creators/${id}/banner`, form);
   return mapCreator(res.data as BackendCreatorResponse);
 }
 
