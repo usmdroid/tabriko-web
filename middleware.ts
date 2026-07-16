@@ -14,7 +14,14 @@ export function middleware(req: NextRequest) {
   }
 
   if (pathname.startsWith("/creator")) {
-    if (pathname === "/creator/login") return NextResponse.next();
+    // Public creator pages: login + the "become a creator" application flow.
+    if (
+      pathname === "/creator/login" ||
+      pathname === "/creator/apply" ||
+      pathname.startsWith("/creator/apply/")
+    ) {
+      return NextResponse.next();
+    }
     if (!req.cookies.get(COOKIE_NAMES.creator.at)?.value) {
       return NextResponse.redirect(new URL("/creator/login", req.url));
     }
