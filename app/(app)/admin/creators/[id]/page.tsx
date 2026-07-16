@@ -17,6 +17,7 @@ import { ApiError } from "@/lib/api";
 import { formatUzPhoneInput, normalizeUzPhone } from "@/lib/phone";
 import { Spinner } from "@/app/components/Spinner";
 import { Skeleton } from "@/app/components/Skeleton";
+import { NotifyDialog } from "@/app/components/NotifyDialog";
 
 const TIER_LABEL: Record<CreatorTier, string> = {
   STANDARD: "Standart",
@@ -308,6 +309,9 @@ export default function AdminCreatorDetailPage() {
           </ul>
         )}
       </div>
+
+      {/* Send push notification to this creator (same flow as users) */}
+      <NotifyDialog userId={detail.id} />
 
       {/* Add contact modal */}
       {showAdd && (

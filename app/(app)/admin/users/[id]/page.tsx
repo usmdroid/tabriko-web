@@ -4,10 +4,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { RefreshCw, X } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import {
   fetchUser,
-  sendUserNotification,
   blockDevice,
   unblockDevice,
   AdminUserDetail,
@@ -16,6 +15,7 @@ import {
 import { ApiError } from "@/lib/api";
 import { Spinner } from "@/app/components/Spinner";
 import { Skeleton } from "@/app/components/Skeleton";
+import { NotifyDialog } from "@/app/components/NotifyDialog";
 
 export default function AdminUserDetailPage() {
   const t = useTranslations("adminUsers");
@@ -24,15 +24,7 @@ export default function AdminUserDetailPage() {
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [notifyTitle, setNotifyTitle] = useState("");
-  const [notifyBody, setNotifyBody] = useState("");
-  const [mode, setMode] = useState<"all" | "selected">("all");
-  const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState("");
-  const [sendSuccessMsg, setSendSuccessMsg] = useState("");
   const [blockingId, setBlockingId] = useState<string | null>(null);
-  const [showNotifyModal, setShowNotifyModal] = useState(false);
 
   const load = useCallback(async () => {
     if (!params.id) return;
@@ -52,34 +44,6 @@ export default function AdminUserDetailPage() {
     load();
   }, [load]);
 
-  useEffect(() => {
-    if (!showNotifyModal) {
-      setNotifyTitle("");
-      setNotifyBody("");
-      setMode("all");
-      setSendError("");
-      setSelectedIds(new Set());
-    }
-  }, [showNotifyModal]);
-
-  function toggleDevice(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleAll() {
-    if (!detail) return;
-    if (detail.devices.length > 0 && selectedIds.size === detail.devices.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(detail.devices.map((d) => d.id)));
-    }
-  }
-
   async function handleBlockToggle(device: AdminDevice) {
     if (!window.confirm(device.blocked ? t("unblockDeviceConfirm") : t("blockDeviceConfirm"))) return;
     setBlockingId(device.id);
@@ -91,43 +55,6 @@ export default function AdminUserDetailPage() {
       // silent — load() will restore state
     } finally {
       setBlockingId(null);
-    }
-  }
-
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault();
-    if (!detail) return;
-    if (!window.confirm(t("confirmSend"))) return;
-
-    setSending(true);
-    setSendError("");
-    setSendSuccessMsg("");
-    try {
-      const deviceIds = mode === "all" ? [] : [...selectedIds];
-      const result = await sendUserNotification(detail.id, {
-        title: notifyTitle,
-        body: notifyBody,
-        deviceIds,
-      });
-      // Build a meaningful confirmation from what the backend actually did.
-      let msg: string;
-      if (!result || result.delivered === 0) {
-        msg = t("sendSuccessNoDevice");
-      } else if (result.failed > 0) {
-        msg = t("sendSuccessPartial", { delivered: result.delivered, failed: result.failed });
-      } else {
-        msg = t("sendSuccessCount", { delivered: result.delivered });
-      }
-      setSendSuccessMsg(msg);
-      setNotifyTitle("");
-      setNotifyBody("");
-      setShowNotifyModal(false);
-      setTimeout(() => setSendSuccessMsg(""), 5000);
-    } catch (e) {
-      if (e instanceof ApiError) setSendError(e.message);
-      else setSendError(t("error"));
-    } finally {
-      setSending(false);
     }
   }
 
@@ -158,13 +85,7 @@ export default function AdminUserDetailPage() {
 
   if (!detail) return null;
 
-  const allSelected =
-    detail.devices.length > 0 && selectedIds.size === detail.devices.length;
-  const sendDisabled =
-    sending || (mode === "selected" && selectedIds.size === 0);
-
   return (
-    <>
     <div className="max-w-2xl">
       <Link
         href="/admin"
@@ -296,151 +217,7 @@ export default function AdminUserDetailPage() {
         )}
       </div>
 
-      {sendSuccessMsg && (
-        <p className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2 mb-4">
-          {sendSuccessMsg}
-        </p>
-      )}
-
-      <div className="flex justify-end mb-4">
-        <button
-          type="button"
-          onClick={() => setShowNotifyModal(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-hover transition-colors"
-        >
-          {t("notifyTitle")}
-        </button>
-      </div>
+      <NotifyDialog userId={detail.id} devices={detail.devices} />
     </div>
-
-    {showNotifyModal && (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-        onClick={() => setShowNotifyModal(false)}
-      >
-        <div
-          className="surface-card w-full max-w-lg p-6 flex flex-col gap-4 mx-4"
-          style={{ animation: "modalIn 200ms ease forwards" }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-primary">{t("notifyTitle")}</p>
-            <button type="button" onClick={() => setShowNotifyModal(false)} className="text-muted hover:text-primary">
-              <X size={18} />
-            </button>
-          </div>
-          <form onSubmit={handleSend} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">{t("notifyTitleField")}</label>
-              <input
-                type="text"
-                required
-                value={notifyTitle}
-                onChange={(e) => setNotifyTitle(e.target.value)}
-                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">{t("notifyBody")}</label>
-              <textarea
-                required
-                rows={4}
-                value={notifyBody}
-                onChange={(e) => setNotifyBody(e.target.value)}
-                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent resize-none"
-              />
-            </div>
-
-            <div className="flex items-center gap-4 text-sm">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="notifyMode"
-                  value="all"
-                  checked={mode === "all"}
-                  onChange={() => setMode("all")}
-                  className="accent-accent"
-                />
-                <span className="text-primary">{t("sendToAll")}</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="notifyMode"
-                  value="selected"
-                  checked={mode === "selected"}
-                  onChange={() => setMode("selected")}
-                  className="accent-accent"
-                />
-                <span className="text-primary">{t("sendToSelected")}</span>
-              </label>
-            </div>
-
-            {mode === "selected" && (
-              <div className="flex flex-col gap-1">
-                {detail.devices.length === 0 ? (
-                  <p className="text-xs text-muted">{t("noDevices")}</p>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-medium text-muted">
-                        {t("chooseDevices")}
-                      </label>
-                      <button
-                        type="button"
-                        onClick={toggleAll}
-                        className="text-xs text-accent hover:underline"
-                      >
-                        {allSelected ? t("deselectAll") : t("selectAll")}
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-1 max-h-48 overflow-y-auto rounded-lg border border-line p-1">
-                      {detail.devices.map((d) => (
-                        <label
-                          key={d.id}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-surface"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(d.id)}
-                            onChange={() => toggleDevice(d.id)}
-                            className="accent-accent"
-                          />
-                          <span className="text-sm text-primary">{d.deviceName}</span>
-                          <span className="text-xs text-muted">· {d.platform}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {selectedIds.size === 0 && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400">
-                        {t("selectDevicesHint")}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {sendError && (
-              <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
-                {sendError}
-              </p>
-            )}
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={sendDisabled}
-                className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-hover transition-colors disabled:opacity-60"
-              >
-                {sending && <Spinner size={13} />}
-                {t("sendBtn")}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    )}
-  </>
   );
 }
