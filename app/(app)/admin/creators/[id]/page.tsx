@@ -2,15 +2,15 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Trash2, RefreshCw, Plus, X, Phone } from "lucide-react";
+import { Trash2, Plus, X, Phone } from "lucide-react";
 import {
   fetchCreatorDetail,
   addCreatorContact,
   deleteCreatorContact,
   uploadCreatorAvatar,
   uploadCreatorBanner,
+  getSession,
   AdminCreator,
   AdminCreatorContact,
   CreatorTier,
@@ -20,6 +20,10 @@ import { formatUzPhoneInput, normalizeUzPhone } from "@/lib/phone";
 import { Spinner } from "@/app/components/Spinner";
 import { Skeleton } from "@/app/components/Skeleton";
 import { NotifyDialog } from "@/app/components/NotifyDialog";
+import { StatusBadge } from "@/app/components/StatusBadge";
+import { InfoGrid, InfoField } from "@/app/components/InfoGrid";
+import { DetailHeader } from "@/app/components/DetailHeader";
+import { ProfileBanner } from "@/app/components/ProfileBanner";
 
 const TIER_LABEL: Record<CreatorTier, string> = {
   STANDARD: "Standart",
@@ -67,6 +71,13 @@ export default function AdminCreatorDetailPage() {
   const [editBannerPreview, setEditBannerPreview] = useState<string | null>(null);
   const [savingImages, setSavingImages] = useState(false);
   const [imageError, setImageError] = useState("");
+
+  // Client-only role check (avoids SSR/hydration mismatch)
+  const [canEditImages, setCanEditImages] = useState(false);
+  useEffect(() => {
+    const session = getSession();
+    setCanEditImages(session?.role === "SUPERADMIN");
+  }, []);
 
   const load = useCallback(async () => {
     if (!params.id) return;
@@ -185,9 +196,9 @@ export default function AdminCreatorDetailPage() {
     return (
       <div className="max-w-2xl flex flex-col gap-4">
         <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-7 w-56" />
+        <Skeleton className="aspect-video w-full rounded-xl" />
         <div className="surface-card p-5 flex flex-col gap-3">
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-4 w-full" />
           ))}
         </div>
@@ -208,45 +219,26 @@ export default function AdminCreatorDetailPage() {
 
   if (!detail) return null;
 
+  const tierBadge = detail.tier ? (
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TIER_COLOR[detail.tier]}`}>
+      {TIER_LABEL[detail.tier]}
+    </span>
+  ) : null;
+
+  const statusBadge = (
+    <StatusBadge active={detail.accountStatus === "active"} />
+  );
+
   return (
     <div className="max-w-2xl">
-      <Link
-        href="/admin/creators"
-        className="text-sm text-muted hover:text-primary transition-colors mb-4 inline-block"
-      >
-        {t("backToList")}
-      </Link>
-
-      <div className="flex items-center gap-3 mb-6 flex-wrap">
-        <h1 className="text-xl font-semibold text-primary">{detail.name}</h1>
-        <span className="text-sm text-muted">{detail.category}</span>
-        {detail.tier && (
-          <span
-            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TIER_COLOR[detail.tier]}`}
-          >
-            {TIER_LABEL[detail.tier]}
-          </span>
-        )}
-        <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-            detail.accountStatus === "active"
-              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-          }`}
-        >
-          {detail.accountStatus === "active" ? "Faol" : "Bloklangan"}
-        </span>
-        <button
-          type="button"
-          onClick={load}
-          disabled={loading}
-          title={t("reload")}
-          aria-label={t("reload")}
-          className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line text-muted hover:border-accent/50 hover:text-accent transition-colors disabled:opacity-40"
-        >
-          {loading ? <Spinner size={15} /> : <RefreshCw size={15} />}
-        </button>
-      </div>
+      <DetailHeader
+        title={detail.name}
+        backHref="/admin/creators"
+        backLabel={t("backToList")}
+        onReload={load}
+        loading={loading}
+        reloadLabel={t("reload")}
+      />
 
       {actionError && (
         <p className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
@@ -254,104 +246,31 @@ export default function AdminCreatorDetailPage() {
         </p>
       )}
 
-      {/* Creator main info */}
-      <div className="surface-card p-5 mb-4">
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colName")}</p>
-            <p className="font-medium text-primary">{detail.name}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colPhone")}</p>
-            <p className="font-medium text-primary">{detail.phone}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colCategory")}</p>
-            <p className="font-medium text-primary">{detail.category}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colTier")}</p>
-            {detail.tier ? (
-              <span
-                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TIER_COLOR[detail.tier]}`}
-              >
-                {TIER_LABEL[detail.tier]}
-              </span>
-            ) : (
-              <span className="font-medium text-primary">—</span>
-            )}
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colStatus")}</p>
-            <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                detail.accountStatus === "active"
-                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                  : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-              }`}
-            >
-              {detail.accountStatus === "active" ? "Faol" : "Bloklangan"}
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* Profile banner: full-width banner + avatar overlaid */}
+      <ProfileBanner
+        bannerUrl={editBannerPreview ?? detail.bannerUrl}
+        avatarUrl={editAvatarPreview ?? detail.avatarUrl}
+        name={detail.name}
+        subtitle={detail.category}
+        badges={
+          <>
+            {statusBadge}
+            {tierBadge}
+          </>
+        }
+      />
 
-      {/* Images card */}
-      <div className="surface-card p-5 mb-4">
-        <p className="text-sm font-semibold text-primary mb-3">{t("imagesTitle")}</p>
-
-        {imageError && (
-          <p className="mb-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
-            {imageError}
-          </p>
-        )}
-
-        {/* Avatar row */}
-        <div className="flex items-center gap-3 mb-4">
-          {editAvatarPreview ? (
-            <img src={editAvatarPreview} alt="" className="w-14 h-14 rounded-lg object-cover border border-line shrink-0" />
-          ) : detail.avatarUrl ? (
-            <img src={detail.avatarUrl} alt="" className="w-14 h-14 rounded-lg object-cover border border-line shrink-0" />
-          ) : (
-            <div className="w-14 h-14 rounded-lg bg-card border border-line shrink-0" />
-          )}
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-muted">{t("fieldAvatar")}</p>
-            <label className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-xs text-muted hover:border-accent/50 hover:text-accent transition-colors text-center">
-              {t("avatarChange")}
-              <input type="file" accept="image/*" className="hidden" onChange={handleEditAvatarChange} />
-            </label>
-          </div>
-        </div>
-
-        {/* Banner row */}
-        <div className="flex flex-col gap-1.5 mb-4">
-          <p className="text-xs text-muted">{t("fieldBanner")}</p>
-          {editBannerPreview ? (
-            <img src={editBannerPreview} alt="" className="aspect-video w-full object-cover rounded-lg border border-line" />
-          ) : detail.bannerUrl ? (
-            <img src={detail.bannerUrl} alt="" className="aspect-video w-full object-cover rounded-lg border border-line" />
-          ) : (
-            <div className="aspect-video w-full rounded-lg border border-dashed border-line flex items-center justify-center text-xs text-muted">
-              {t("bannerPickPrompt")}
-            </div>
-          )}
-          <label className="cursor-pointer self-start rounded-lg border border-line px-3 py-1.5 text-xs text-muted hover:border-accent/50 hover:text-accent transition-colors">
-            {t("bannerChange")}
-            <input type="file" accept="image/*" className="hidden" onChange={handleEditBannerChange} />
-          </label>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleSaveImages}
-          disabled={savingImages || (!editAvatar && !editBanner)}
-          className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-hover transition-colors disabled:opacity-60"
-        >
-          {savingImages && <Spinner size={13} />}
-          {t("imagesSave")}
-        </button>
-      </div>
+      {/* Info grid */}
+      <InfoGrid>
+        <InfoField label={t("colPhone")} value={detail.phone} />
+        <InfoField label={t("colCategory")} value={detail.category} />
+        <InfoField label={t("colTier")}>
+          {tierBadge ?? <p className="font-medium text-primary">—</p>}
+        </InfoField>
+        <InfoField label={t("colStatus")}>
+          {statusBadge}
+        </InfoField>
+      </InfoGrid>
 
       {/* Contact numbers */}
       <div className="surface-card p-5 mb-4">
@@ -421,7 +340,66 @@ export default function AdminCreatorDetailPage() {
         )}
       </div>
 
-      {/* Send push notification to this creator (same flow as users) */}
+      {/* Images edit card — SUPERADMIN only */}
+      {canEditImages && (
+        <div className="surface-card p-5 mb-4">
+          <p className="text-sm font-semibold text-primary mb-3">{t("imagesTitle")}</p>
+
+          {imageError && (
+            <p className="mb-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
+              {imageError}
+            </p>
+          )}
+
+          {/* Avatar row */}
+          <div className="flex items-center gap-3 mb-4">
+            {editAvatarPreview ? (
+              <img src={editAvatarPreview} alt="" className="w-14 h-14 rounded-lg object-cover border border-line shrink-0" />
+            ) : detail.avatarUrl ? (
+              <img src={detail.avatarUrl} alt="" className="w-14 h-14 rounded-lg object-cover border border-line shrink-0" />
+            ) : (
+              <div className="w-14 h-14 rounded-lg bg-card border border-line shrink-0" />
+            )}
+            <div className="flex flex-col gap-1">
+              <p className="text-xs text-muted">{t("fieldAvatar")}</p>
+              <label className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-xs text-muted hover:border-accent/50 hover:text-accent transition-colors text-center">
+                {t("avatarChange")}
+                <input type="file" accept="image/*" className="hidden" onChange={handleEditAvatarChange} />
+              </label>
+            </div>
+          </div>
+
+          {/* Banner row */}
+          <div className="flex flex-col gap-1.5 mb-4">
+            <p className="text-xs text-muted">{t("fieldBanner")}</p>
+            {editBannerPreview ? (
+              <img src={editBannerPreview} alt="" className="aspect-video w-full object-cover rounded-lg border border-line" />
+            ) : detail.bannerUrl ? (
+              <img src={detail.bannerUrl} alt="" className="aspect-video w-full object-cover rounded-lg border border-line" />
+            ) : (
+              <div className="aspect-video w-full rounded-lg border border-dashed border-line flex items-center justify-center text-xs text-muted">
+                {t("bannerPickPrompt")}
+              </div>
+            )}
+            <label className="cursor-pointer self-start rounded-lg border border-line px-3 py-1.5 text-xs text-muted hover:border-accent/50 hover:text-accent transition-colors">
+              {t("bannerChange")}
+              <input type="file" accept="image/*" className="hidden" onChange={handleEditBannerChange} />
+            </label>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSaveImages}
+            disabled={savingImages || (!editAvatar && !editBanner)}
+            className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-hover transition-colors disabled:opacity-60"
+          >
+            {savingImages && <Spinner size={13} />}
+            {t("imagesSave")}
+          </button>
+        </div>
+      )}
+
+      {/* Send push notification to this creator */}
       <NotifyDialog userId={detail.id} />
 
       {/* Add contact modal */}

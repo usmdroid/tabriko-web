@@ -2,9 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { RefreshCw } from "lucide-react";
 import {
   fetchUser,
   blockDevice,
@@ -16,6 +14,9 @@ import { ApiError } from "@/lib/api";
 import { Spinner } from "@/app/components/Spinner";
 import { Skeleton } from "@/app/components/Skeleton";
 import { NotifyDialog } from "@/app/components/NotifyDialog";
+import { DetailHeader } from "@/app/components/DetailHeader";
+import { InfoGrid, InfoField } from "@/app/components/InfoGrid";
+import { StatusBadge } from "@/app/components/StatusBadge";
 
 export default function AdminUserDetailPage() {
   const t = useTranslations("adminUsers");
@@ -87,77 +88,37 @@ export default function AdminUserDetailPage() {
 
   return (
     <div className="max-w-2xl">
-      <Link
-        href="/admin"
-        className="text-sm text-muted hover:text-primary transition-colors mb-4 inline-block"
-      >
-        {t("backToList")}
-      </Link>
+      <DetailHeader
+        title={detail.name}
+        avatarUrl={detail.avatarUrl}
+        badges={
+          <StatusBadge
+            active={detail.status === "active"}
+            activeLabel={t("statusActive")}
+            blockedLabel={t("statusBlocked")}
+          />
+        }
+        onReload={load}
+        loading={loading}
+        backHref="/admin"
+        backLabel={t("backToList")}
+      />
 
-      <div className="flex items-center gap-3 mb-6 flex-wrap">
-        <h1 className="text-xl font-semibold text-primary">{detail.name}</h1>
-        <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-            detail.status === "active"
-              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-          }`}
-        >
-          {detail.status === "active" ? t("statusActive") : t("statusBlocked")}
-        </span>
-        <button
-          type="button"
-          onClick={load}
-          disabled={loading}
-          title={t("reload")}
-          aria-label={t("reload")}
-          className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line text-muted hover:border-accent/50 hover:text-accent transition-colors disabled:opacity-40"
-        >
-          {loading ? <Spinner size={15} /> : <RefreshCw size={15} />}
-        </button>
-      </div>
-
-      {/* User info card */}
-      <div className="surface-card p-5 mb-4">
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colName")}</p>
-            <p className="font-medium text-primary">{detail.name}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colPhone")}</p>
-            <p className="font-medium text-primary">{detail.phone}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colRole")}</p>
-            <p className="font-medium text-primary">{detail.role}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colStatus")}</p>
-            <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                detail.status === "active"
-                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                  : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-              }`}
-            >
-              {detail.status === "active" ? t("statusActive") : t("statusBlocked")}
-            </span>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colCreatedAt")}</p>
-            <p className="font-medium text-primary">{detail.createdAt}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colEmail")}</p>
-            <p className="font-medium text-primary">{detail.email || <span className="text-muted">{t("notSet")}</span>}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-0.5">{t("colBirthday")}</p>
-            <p className="font-medium text-primary">{detail.birthday || <span className="text-muted">{t("notSet")}</span>}</p>
-          </div>
-        </div>
-      </div>
+      <InfoGrid>
+        <InfoField label={t("colName")} value={detail.name} />
+        <InfoField label={t("colPhone")} value={detail.phone} />
+        <InfoField label={t("colRole")} value={detail.role} />
+        <InfoField label={t("colStatus")}>
+          <StatusBadge
+            active={detail.status === "active"}
+            activeLabel={t("statusActive")}
+            blockedLabel={t("statusBlocked")}
+          />
+        </InfoField>
+        <InfoField label={t("colCreatedAt")} value={detail.createdAt} />
+        <InfoField label={t("colEmail")} value={detail.email} />
+        <InfoField label={t("colBirthday")} value={detail.birthday} />
+      </InfoGrid>
 
       {/* Devices card */}
       <div className="surface-card p-5 mb-4">

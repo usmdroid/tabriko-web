@@ -42,6 +42,7 @@ export interface AdminUserDetail {
   createdAt: string;
   email: string | null;
   birthday: string | null;
+  avatarUrl?: string | null;
   devices: AdminDevice[];
 }
 
