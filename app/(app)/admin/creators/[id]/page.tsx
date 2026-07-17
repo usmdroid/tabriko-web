@@ -332,12 +332,12 @@ export default function AdminCreatorDetailPage() {
   return (
     <div className="max-w-2xl">
       <DetailHeader
-        title={detail.name}
         backHref="/admin/creators"
         backLabel={t("backToList")}
         onReload={load}
         loading={loading}
         reloadLabel={t("reload")}
+        badges={<NotifyDialog userId={detail.id} />}
       />
 
       {actionError && (
@@ -351,14 +351,6 @@ export default function AdminCreatorDetailPage() {
         bannerUrl={detail.bannerUrl}
         avatarUrl={detail.avatarUrl}
         name={detail.name}
-        subtitle={detail.category}
-        badges={
-          <>
-            {statusBadge}
-            {warningBadge}
-            {tierBadge}
-          </>
-        }
         canDeleteImages={isSuperadmin}
         onDeleteAvatar={() => setModal("deleteAvatar")}
         onDeleteBanner={() => setModal("deleteBanner")}
@@ -374,43 +366,35 @@ export default function AdminCreatorDetailPage() {
           {tierBadge ?? <p className="font-medium text-primary">—</p>}
         </InfoField>
         <InfoField label={t("colStatus")}>
-          {statusBadge}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {statusBadge}
+            {warningBadge}
+            {isSuperadmin && isActive && (
+              <button
+                type="button"
+                onClick={() => setModal("suspend")}
+                className="flex items-center gap-1 rounded-lg border border-amber-500/40 px-2 py-0.5 text-xs font-medium text-amber-700 hover:bg-amber-500/10 transition-colors"
+              >
+                <Lock size={11} />
+                {t("suspendBtn")}
+              </button>
+            )}
+            {isSuperadmin && isSuspended && (
+              <button
+                type="button"
+                onClick={() => setModal("reactivate")}
+                className="flex items-center gap-1 rounded-lg border border-green-500/40 px-2 py-0.5 text-xs font-medium text-green-700 hover:bg-green-500/10 transition-colors"
+              >
+                <CheckCircle size={11} />
+                {t("reactivateBtn")}
+              </button>
+            )}
+          </div>
+          {isSuspended && detail.suspensionReason && (
+            <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{detail.suspensionReason}</p>
+          )}
         </InfoField>
       </InfoGrid>
-
-      {/* Status control — SUPERADMIN only, for active or suspended creators */}
-      {isSuperadmin && (isActive || isSuspended) && (
-        <div className="surface-card p-5 mb-4">
-          <p className="text-sm font-semibold text-primary mb-3">{t("holatTitle")}</p>
-
-          {isSuspended && detail.suspensionReason && (
-            <div className="mb-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-3 py-2">
-              <p className="text-xs text-muted mb-0.5">{t("suspensionReasonLabel")}</p>
-              <p className="text-sm text-amber-700 dark:text-amber-400">{detail.suspensionReason}</p>
-            </div>
-          )}
-
-          {isActive ? (
-            <button
-              type="button"
-              onClick={() => setModal("suspend")}
-              className="flex items-center gap-1.5 rounded-lg border border-amber-500/40 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-500/10 transition-colors"
-            >
-              <Lock size={13} />
-              {t("suspendBtn")}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setModal("reactivate")}
-              className="flex items-center gap-1.5 rounded-lg border border-green-500/40 px-3 py-2 text-xs font-medium text-green-700 hover:bg-green-500/10 transition-colors"
-            >
-              <CheckCircle size={13} />
-              {t("reactivateBtn")}
-            </button>
-          )}
-        </div>
-      )}
 
       {/* Contact numbers */}
       <div className="surface-card p-5 mb-4">
@@ -490,9 +474,6 @@ export default function AdminCreatorDetailPage() {
           </ul>
         )}
       </div>
-
-      {/* Send push notification to this creator */}
-      <NotifyDialog userId={detail.id} />
 
       {/* Moderation chat thread */}
       <div className="surface-card p-5 mb-4">

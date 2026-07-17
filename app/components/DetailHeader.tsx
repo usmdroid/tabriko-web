@@ -4,7 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { Spinner } from "@/app/components/Spinner";
 
 interface DetailHeaderProps {
-  title: string;
+  title?: string;
   badges?: ReactNode;
   onReload: () => void;
   loading: boolean;
@@ -41,7 +41,7 @@ export function DetailHeader({
             className="w-9 h-9 rounded-full object-cover border border-line shrink-0"
           />
         )}
-        <h1 className="text-xl font-semibold text-primary">{title}</h1>
+        {title && <h1 className="text-xl font-semibold text-primary">{title}</h1>}
         {badges}
         <button
           type="button"
