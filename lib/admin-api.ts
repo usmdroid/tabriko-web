@@ -1,5 +1,5 @@
 import { post, ApiError } from "./api";
-import { authGet, authPost, authPatch, authPut, authDel, authPostForm } from "./auth-fetch";
+import { authGet, authPost, authPatch, authPut, authDel, authDelWithBody, authPostForm } from "./auth-fetch";
 import { getSession as getSessionInfo, saveSession as saveSessionInfo, clearSession as clearSessionInfo, type SessionInfo } from "./session";
 import { getCurrentLocale, INTL_LOCALE_TAG } from "./locale";
 
@@ -65,9 +65,19 @@ export interface AdminCreator {
   tier?: CreatorTier;
   contacts: AdminCreatorContact[];
   accountStatus?: string;
+  suspensionReason?: string;
   requisites: AdminRequisiteRef[];
   avatarUrl?: string;
   bannerUrl?: string;
+  activeWarningCount?: number;
+}
+
+export interface ModerationEntry {
+  id: string;
+  kind: "MESSAGE" | "WARNING" | "SUSPENSION" | "REACTIVATION";
+  body: string;
+  author: string;
+  createdAt: string;
 }
 
 export interface AddCreatorRequest {
@@ -195,10 +205,12 @@ interface BackendCreatorResponse {
   exclusive: boolean;
   tier?: string;
   status?: string;
+  suspensionReason?: string;
   contacts?: AdminCreatorContact[];
   requisites?: Array<{ name: string; emoji?: string }>;
   avatarUrl?: string;
   bannerUrl?: string;
+  activeWarningCount?: number;
 }
 
 interface BackendOrderResponse {
@@ -294,9 +306,11 @@ function mapCreator(c: BackendCreatorResponse): AdminCreator {
     tier: (c.tier as CreatorTier) ?? undefined,
     contacts: c.contacts ?? [],
     accountStatus: c.status,
+    suspensionReason: c.suspensionReason ?? undefined,
     requisites: c.requisites ?? [],
     avatarUrl: c.avatarUrl ?? undefined,
     bannerUrl: c.bannerUrl ?? undefined,
+    activeWarningCount: c.activeWarningCount ?? undefined,
   };
 }
 
@@ -503,6 +517,31 @@ export async function addCreatorContact(id: string, data: { phone: string; label
 
 export async function deleteCreatorContact(id: string, contactId: string): Promise<void> {
   await authDel("admin", `/admin/creators/${id}/contacts/${contactId}`);
+}
+
+export async function suspendCreator(id: string, reason: string): Promise<void> {
+  await authPost("admin", `/admin/creators/${id}/suspend`, { reason });
+}
+
+export async function reactivateCreator(id: string): Promise<void> {
+  await authPost("admin", `/admin/creators/${id}/reactivate`, {});
+}
+
+export async function deleteCreatorAvatar(id: string, reason: string): Promise<void> {
+  await authDelWithBody("admin", `/admin/creators/${id}/avatar`, { reason });
+}
+
+export async function deleteCreatorBanner(id: string, reason: string): Promise<void> {
+  await authDelWithBody("admin", `/admin/creators/${id}/banner`, { reason });
+}
+
+export async function postCreatorModeration(id: string, kind: "MESSAGE" | "WARNING", body: string): Promise<void> {
+  await authPost("admin", `/admin/creators/${id}/moderation`, { kind, body });
+}
+
+export async function getCreatorModerationThread(id: string): Promise<ModerationEntry[]> {
+  const res = await authGet<ModerationEntry[]>("admin", `/admin/creators/${id}/moderation`);
+  return res.data ?? [];
 }
 
 // ─── Orders ──────────────────────────────────────────────────────────────────

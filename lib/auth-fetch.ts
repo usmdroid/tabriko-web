@@ -157,6 +157,14 @@ export function authDel<T>(scope: Scope, path: string, signal?: AbortSignal) {
   return authRequest<T>(scope, path, { method: "DELETE", signal });
 }
 
+export function authDelWithBody<T>(scope: Scope, path: string, body?: unknown, signal?: AbortSignal) {
+  return authRequest<T>(scope, path, {
+    method: "DELETE",
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
+  });
+}
+
 export function authPostForm<T>(scope: Scope, path: string, formData: FormData, signal?: AbortSignal) {
   return authRequest<T>(scope, path, { method: "POST", body: formData, jsonBody: false, signal });
 }
