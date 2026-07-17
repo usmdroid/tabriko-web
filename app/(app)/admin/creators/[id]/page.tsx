@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Trash2, Plus, X, Phone, AlertTriangle, Lock, CheckCircle, MessageSquare, Send } from "lucide-react";
+import { Trash2, Plus, X, Phone, AlertTriangle, Lock, CheckCircle, MessageSquare, Send, ChevronDown } from "lucide-react";
 import {
   fetchCreatorDetail,
   addCreatorContact,
@@ -104,6 +104,8 @@ export default function AdminCreatorDetailPage() {
 
   // Field warning modal
   const [warnTarget, setWarnTarget] = useState<WarnTarget>(null);
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [warnText, setWarnText] = useState("");
   const [warnBusy, setWarnBusy] = useState(false);
   const [warnError, setWarnError] = useState("");
@@ -321,6 +323,71 @@ export default function AdminCreatorDetailPage() {
     <WarningBadge count={detail.activeWarningCount} />
   ) : null;
 
+  // Status shown as a dropdown next to the name: warning / suspend|reactivate /
+  // send-message actions all live here (moderator: warn+message; superadmin: +suspend).
+  const canModerate = canWarn; // warn + message
+  const statusDropdown = (
+    <div className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setStatusMenuOpen((v) => !v)}
+        className="inline-flex items-center gap-1"
+        aria-haspopup="menu"
+        aria-expanded={statusMenuOpen}
+      >
+        {statusBadge}
+        <ChevronDown size={14} className="text-muted" />
+      </button>
+      {statusMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setStatusMenuOpen(false)} />
+          <div className="absolute left-0 top-full z-50 mt-1 min-w-[190px] overflow-hidden rounded-lg border border-line bg-card py-1 shadow-lg">
+            {canModerate && (
+              <button
+                type="button"
+                onClick={() => { setStatusMenuOpen(false); setWarnTarget({ kind: "name" }); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-line/40 transition-colors"
+              >
+                <AlertTriangle size={14} className="text-amber-500" />
+                {t("warnBtn")}
+              </button>
+            )}
+            {isSuperadmin && isActive && (
+              <button
+                type="button"
+                onClick={() => { setStatusMenuOpen(false); setModal("suspend"); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 dark:text-amber-400 hover:bg-line/40 transition-colors"
+              >
+                <Lock size={14} />
+                {t("suspendBtn")}
+              </button>
+            )}
+            {isSuperadmin && isSuspended && (
+              <button
+                type="button"
+                onClick={() => { setStatusMenuOpen(false); setModal("reactivate"); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-green-700 dark:text-green-400 hover:bg-line/40 transition-colors"
+              >
+                <CheckCircle size={14} />
+                {t("reactivateBtn")}
+              </button>
+            )}
+            {canModerate && (
+              <button
+                type="button"
+                onClick={() => { setStatusMenuOpen(false); setNotifyOpen(true); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-line/40 transition-colors"
+              >
+                <MessageSquare size={14} className="text-accent" />
+                {t("notifyBtn")}
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   // Modal config
   const modalNeedsReason = modal !== "reactivate";
   const modalTitle =
@@ -337,7 +404,15 @@ export default function AdminCreatorDetailPage() {
         onReload={load}
         loading={loading}
         reloadLabel={t("reload")}
-        badges={<NotifyDialog userId={detail.id} />}
+      />
+
+      {/* Controlled push-notification dialog — opened from the status dropdown
+          ("Xabar yuborish"); no standalone trigger button. */}
+      <NotifyDialog
+        userId={detail.id}
+        open={notifyOpen}
+        onOpenChange={setNotifyOpen}
+        hideTrigger
       />
 
       {actionError && (
@@ -351,6 +426,13 @@ export default function AdminCreatorDetailPage() {
         bannerUrl={detail.bannerUrl}
         avatarUrl={detail.avatarUrl}
         name={detail.name}
+        badges={
+          <div className="flex flex-wrap items-center gap-1.5">
+            {statusDropdown}
+            {warningBadge}
+            {tierBadge}
+          </div>
+        }
         canDeleteImages={isSuperadmin}
         onDeleteAvatar={() => setModal("deleteAvatar")}
         onDeleteBanner={() => setModal("deleteBanner")}
@@ -366,29 +448,11 @@ export default function AdminCreatorDetailPage() {
           {tierBadge ?? <p className="font-medium text-primary">—</p>}
         </InfoField>
         <InfoField label={t("colStatus")}>
+          {/* Read-only here — status actions (suspend/warn/message) live in the
+              status dropdown next to the name. */}
           <div className="flex flex-wrap items-center gap-1.5">
             {statusBadge}
             {warningBadge}
-            {isSuperadmin && isActive && (
-              <button
-                type="button"
-                onClick={() => setModal("suspend")}
-                className="flex items-center gap-1 rounded-lg border border-amber-500/40 px-2 py-0.5 text-xs font-medium text-amber-700 hover:bg-amber-500/10 transition-colors"
-              >
-                <Lock size={11} />
-                {t("suspendBtn")}
-              </button>
-            )}
-            {isSuperadmin && isSuspended && (
-              <button
-                type="button"
-                onClick={() => setModal("reactivate")}
-                className="flex items-center gap-1 rounded-lg border border-green-500/40 px-2 py-0.5 text-xs font-medium text-green-700 hover:bg-green-500/10 transition-colors"
-              >
-                <CheckCircle size={11} />
-                {t("reactivateBtn")}
-              </button>
-            )}
           </div>
           {isSuspended && detail.suspensionReason && (
             <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{detail.suspensionReason}</p>

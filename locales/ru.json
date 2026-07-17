@@ -311,6 +311,7 @@
     "suspensionReasonLabel": "Причина приостановки",
     "deleteAvatarTitle": "Удалить аватар",
     "deleteBannerTitle": "Удалить баннер",
+    "notifyBtn": "Отправить сообщение",
     "warnBtn": "Предупредить",
     "warnTitle": "Отправить предупреждение",
     "warnMessageLabel": "Текст предупреждения",

@@ -380,6 +380,7 @@
     "suspensionReasonLabel": "Suspension reason",
     "deleteAvatarTitle": "Delete avatar",
     "deleteBannerTitle": "Delete banner",
+    "notifyBtn": "Send message",
     "warnBtn": "Warn",
     "warnTitle": "Send warning",
     "warnMessageLabel": "Warning message",

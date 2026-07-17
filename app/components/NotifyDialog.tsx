@@ -19,13 +19,24 @@ import { Spinner } from "@/app/components/Spinner";
 export function NotifyDialog({
   userId,
   devices: devicesProp,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
 }: {
   userId: string;
   devices?: AdminDevice[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }) {
   const t = useTranslations("adminUsers");
 
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (v: boolean) => {
+    onOpenChange?.(v);
+    if (controlledOpen === undefined) setInternalOpen(v);
+  };
   const [devices, setDevices] = useState<AdminDevice[]>(devicesProp ?? []);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -122,15 +133,17 @@ export function NotifyDialog({
         </p>
       )}
 
-      <div className="flex justify-end mb-4">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-hover transition-colors"
-        >
-          {t("notifyTitle")}
-        </button>
-      </div>
+      {!hideTrigger && (
+        <div className="flex justify-end mb-4">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-hover transition-colors"
+          >
+            {t("notifyTitle")}
+          </button>
+        </div>
+      )}
 
       {open && (
         <div
