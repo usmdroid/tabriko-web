@@ -34,12 +34,19 @@ export function DetailHeader({
       </Link>
 
       <div className="flex items-center gap-3 mb-6 flex-wrap">
-        {avatarUrl && (
+        {avatarUrl ? (
           <img
             src={avatarUrl}
             alt=""
             className="w-9 h-9 rounded-full object-cover border border-line shrink-0"
           />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="w-9 h-9 rounded-full border border-line shrink-0 bg-surface flex items-center justify-center text-sm font-semibold text-muted select-none"
+          >
+            {title ? title.trim().charAt(0).toUpperCase() : "?"}
+          </span>
         )}
         {title && <h1 className="text-xl font-semibold text-primary">{title}</h1>}
         {badges}

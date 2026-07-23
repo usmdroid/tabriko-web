@@ -259,6 +259,7 @@ interface BackendUserDetailResponse {
   createdAt: string;
   email?: string;
   birthDate?: string;
+  avatarUrl?: string | null;
   devices?: Array<{
     id: string;
     platform?: string;
@@ -354,6 +355,7 @@ function mapUserDetail(u: BackendUserDetailResponse): AdminUserDetail {
     createdAt: formatDate(u.createdAt),
     email: u.email ?? null,
     birthday: formatBirthday(u.birthDate),
+    avatarUrl: u.avatarUrl ?? null,
     devices: (u.devices ?? []).map((d) => ({
       id: d.id,
       platform: d.platform ?? "—",
