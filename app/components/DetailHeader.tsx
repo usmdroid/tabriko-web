@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import Link from "next/link";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, User } from "lucide-react";
 import { Spinner } from "@/app/components/Spinner";
 
 interface DetailHeaderProps {
@@ -40,12 +40,19 @@ export function DetailHeader({
             alt=""
             className="w-9 h-9 rounded-full object-cover border border-line shrink-0"
           />
-        ) : (
+        ) : title && title.trim() ? (
           <span
             aria-hidden="true"
             className="w-9 h-9 rounded-full border border-line shrink-0 bg-surface flex items-center justify-center text-sm font-semibold text-muted select-none"
           >
-            {title ? title.trim().charAt(0).toUpperCase() : "?"}
+            {title.trim().charAt(0).toUpperCase()}
+          </span>
+        ) : (
+          <span
+            aria-hidden="true"
+            className="w-9 h-9 rounded-full border border-line shrink-0 bg-surface flex items-center justify-center text-muted"
+          >
+            <User size={18} />
           </span>
         )}
         {title && <h1 className="text-xl font-semibold text-primary">{title}</h1>}

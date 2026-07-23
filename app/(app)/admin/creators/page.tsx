@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Plus, CheckCircle, X } from "lucide-react";
+import { Plus, CheckCircle, X, User } from "lucide-react";
 import {
   fetchCreators,
   addCreator,
@@ -233,8 +233,14 @@ export default function AdminCreatorsPage() {
                       <div className="flex items-center gap-2">
                         {creator.avatarUrl ? (
                           <img src={creator.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+                        ) : creator.name && creator.name.trim() ? (
+                          <span className="w-7 h-7 rounded-full bg-card border border-line shrink-0 flex items-center justify-center text-xs font-semibold text-muted select-none">
+                            {creator.name.trim().charAt(0).toUpperCase()}
+                          </span>
                         ) : (
-                          <div className="w-7 h-7 rounded-full bg-card border border-line shrink-0" />
+                          <span className="w-7 h-7 rounded-full bg-card border border-line shrink-0 flex items-center justify-center text-muted">
+                            <User size={14} />
+                          </span>
                         )}
                         <Link
                           href={`/admin/creators/${creator.id}`}
