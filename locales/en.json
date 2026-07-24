@@ -294,7 +294,19 @@
     "sendSuccessNoDevice": "Notification saved. The user has no active device — they will see it when they open the app.",
     "colEmail": "Email",
     "colBirthday": "Birthday",
-    "notSet": "—"
+    "notSet": "—",
+    "archiveBtn": "Archive",
+    "archiveConfirm": "Archive this account? It will be hidden in the app (kept in storage).",
+    "deleteBtn": "Delete",
+    "deleteTitle": "Delete account",
+    "deleteReasonLabel": "Deletion reason",
+    "deleteReasonPlaceholder": "Enter a reason",
+    "deleteConfirm": "Delete",
+    "restoreBtn": "Restore",
+    "restoreConfirm": "Restore this account?",
+    "statusArchived": "Archived",
+    "needArchiveFirst": "Archive first",
+    "cancel": "Cancel"
   },
   "adminCreators": {
     "detailTitle": "Creator detail",
@@ -393,7 +405,18 @@
     "kindMESSAGE": "Message",
     "kindWARNING": "Warning",
     "kindSUSPENSION": "Suspension",
-    "kindREACTIVATION": "Reactivated"
+    "kindREACTIVATION": "Reactivated",
+    "archiveBtn": "Archive",
+    "archiveConfirm": "Archive this account? It will be hidden in the app (kept in storage).",
+    "deleteBtn": "Delete",
+    "deleteTitle": "Delete account",
+    "deleteReasonLabel": "Deletion reason",
+    "deleteReasonPlaceholder": "Enter a reason",
+    "deleteConfirm": "Delete",
+    "restoreBtn": "Restore",
+    "restoreConfirm": "Restore this account?",
+    "statusArchived": "Archived",
+    "needArchiveFirst": "Archive first"
   },
   "adminOrders": {
     "pageTitle": "Orders",
@@ -443,7 +466,8 @@
       "orders": "Orders",
       "moderation": "Moderation",
       "stats": "Stats",
-      "settings": "Settings"
+      "settings": "Settings",
+      "deleted": "Deleted"
     },
     "brandSuffix": "Admin",
     "roleSuperadmin": "Super Admin",
@@ -561,5 +585,22 @@
       "loadError": "Failed to load requisites",
       "saveError": "Failed to save requisite"
     }
+  },
+  "adminDeleted": {
+    "title": "Deleted accounts",
+    "reload": "Reload",
+    "loadFailed": "Failed to load",
+    "empty": "No deleted accounts",
+    "colName": "Name",
+    "colRole": "Role",
+    "colPhone": "Phone",
+    "colDeletedAt": "Deleted at",
+    "colDeletedBy": "Deleted by",
+    "colReason": "Reason",
+    "colActions": "Actions",
+    "restoreBtn": "Restore",
+    "restoreConfirm": "Restore this account?",
+    "actionFailed": "Action failed",
+    "subtitle": "These accounts are deleted. Shows when, by whom and why."
   }
 }

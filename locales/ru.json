@@ -228,7 +228,19 @@
     "sendSuccessNoDevice": "Уведомление сохранено. У пользователя нет активных устройств — он увидит его при открытии приложения.",
     "colEmail": "Email",
     "colBirthday": "Дата рождения",
-    "notSet": "—"
+    "notSet": "—",
+    "archiveBtn": "Архивировать",
+    "archiveConfirm": "Архивировать аккаунт? Он скроется в приложении (останется в хранилище).",
+    "deleteBtn": "Удалить",
+    "deleteTitle": "Удаление аккаунта",
+    "deleteReasonLabel": "Причина удаления",
+    "deleteReasonPlaceholder": "Укажите причину",
+    "deleteConfirm": "Удалить",
+    "restoreBtn": "Восстановить",
+    "restoreConfirm": "Восстановить этот аккаунт?",
+    "statusArchived": "Архивирован",
+    "needArchiveFirst": "Сначала архивируйте",
+    "cancel": "Отмена"
   },
   "adminCreators": {
     "detailTitle": "Детали криейтора",
@@ -324,7 +336,18 @@
     "kindMESSAGE": "Сообщение",
     "kindWARNING": "Предупреждение",
     "kindSUSPENSION": "Приостановка",
-    "kindREACTIVATION": "Восстановлен"
+    "kindREACTIVATION": "Восстановлен",
+    "archiveBtn": "Архивировать",
+    "archiveConfirm": "Архивировать аккаунт? Он скроется в приложении (останется в хранилище).",
+    "deleteBtn": "Удалить",
+    "deleteTitle": "Удаление аккаунта",
+    "deleteReasonLabel": "Причина удаления",
+    "deleteReasonPlaceholder": "Укажите причину",
+    "deleteConfirm": "Удалить",
+    "restoreBtn": "Восстановить",
+    "restoreConfirm": "Восстановить этот аккаунт?",
+    "statusArchived": "Архивирован",
+    "needArchiveFirst": "Сначала архивируйте"
   },
   "adminApplications": {
     "pageTitle": "Заявки",
@@ -440,7 +463,8 @@
       "orders": "Заказы",
       "moderation": "Модерация",
       "stats": "Статистика",
-      "settings": "Настройки"
+      "settings": "Настройки",
+      "deleted": "Удалённые"
     },
     "brandSuffix": "Админ",
     "roleSuperadmin": "Супер админ",
@@ -558,5 +582,22 @@
       "loadError": "Не удалось загрузить реквизиты",
       "saveError": "Не удалось сохранить реквизит"
     }
+  },
+  "adminDeleted": {
+    "title": "Удалённые аккаунты",
+    "reload": "Обновить",
+    "loadFailed": "Не удалось загрузить",
+    "empty": "Нет удалённых аккаунтов",
+    "colName": "Имя",
+    "colRole": "Роль",
+    "colPhone": "Телефон",
+    "colDeletedAt": "Дата удаления",
+    "colDeletedBy": "Кем удалён",
+    "colReason": "Причина",
+    "colActions": "Действия",
+    "restoreBtn": "Восстановить",
+    "restoreConfirm": "Восстановить этот аккаунт?",
+    "actionFailed": "Не удалось выполнить",
+    "subtitle": "Эти аккаунты удалены. Показано, когда, кем и по какой причине."
   }
 }

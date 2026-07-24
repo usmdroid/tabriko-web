@@ -38,7 +38,8 @@ export interface AdminUserDetail {
   name: string;
   phone: string;
   role: string;
-  status: "active" | "blocked";
+  // raw backend status lowercased: active | blocked | archived | deleted | suspended | pending
+  status: string;
   createdAt: string;
   email: string | null;
   birthday: string | null;
@@ -351,7 +352,7 @@ function mapUserDetail(u: BackendUserDetailResponse): AdminUserDetail {
     name: u.name ?? "—",
     phone: u.phone ?? "—",
     role: u.role ?? "—",
-    status: u.status?.toLowerCase() === "active" ? "active" : "blocked",
+    status: (u.status ?? "active").toLowerCase(),
     createdAt: formatDate(u.createdAt),
     email: u.email ?? null,
     birthday: formatBirthday(u.birthDate),
@@ -440,6 +441,56 @@ export async function blockUser(id: string) {
 
 export async function unblockUser(id: string) {
   return authPost("admin", `/admin/users/${id}/unblock`, {});
+}
+
+// --- Account lifecycle (superadmin): archive / delete / restore ---
+// Keyed by user id — works for both CLIENT users and CREATOR accounts.
+
+export async function archiveAccount(id: string, reason?: string): Promise<void> {
+  await authPost("admin", `/admin/accounts/${id}/archive`, reason ? { reason } : {});
+}
+
+export async function restoreAccount(id: string): Promise<void> {
+  await authPost("admin", `/admin/accounts/${id}/restore`, {});
+}
+
+export async function deleteAccount(id: string, reason: string): Promise<void> {
+  await authPost("admin", `/admin/accounts/${id}/delete`, { reason });
+}
+
+export interface DeletedAccount {
+  id: string;
+  name: string;
+  phone: string;
+  role: string;
+  deletedAt: string;
+  reason: string | null;
+  deletedByName: string | null;
+}
+
+interface BackendDeletedAccount {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  role: string | null;
+  deletedAt: string | null;
+  reason: string | null;
+  deletedByName: string | null;
+}
+
+export async function fetchDeletedAccounts(
+  signal?: AbortSignal,
+): Promise<DeletedAccount[]> {
+  const res = await authGet<BackendDeletedAccount[]>("admin", "/admin/deleted-accounts", signal);
+  return (res.data ?? []).map((d) => ({
+    id: d.id,
+    name: d.name ?? "—",
+    phone: d.phone ?? "—",
+    role: d.role ?? "—",
+    deletedAt: formatDate(d.deletedAt),
+    reason: d.reason ?? null,
+    deletedByName: d.deletedByName ?? null,
+  }));
 }
 
 export async function fetchUser(

@@ -18,6 +18,7 @@ import {
   CalendarDays,
   Megaphone,
   ListChecks,
+  Trash2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { getSession, clearSession, StaffSession } from "@/lib/admin-api";
@@ -40,6 +41,7 @@ const NAV = [
   { href: "/admin/orders", key: "orders", icon: ShoppingBag, exact: false, superAdminOnly: false },
   { href: "/admin/moderation", key: "moderation", icon: Shield, exact: false, superAdminOnly: false },
   { href: "/admin/stats", key: "stats", icon: BarChart2, exact: false, superAdminOnly: false },
+  { href: "/admin/deleted", key: "deleted", icon: Trash2, exact: false, superAdminOnly: true },
   { href: "/admin/settings", key: "settings", icon: Settings, exact: false, superAdminOnly: true },
 ];
 

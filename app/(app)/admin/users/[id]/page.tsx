@@ -17,6 +17,7 @@ import { NotifyDialog } from "@/app/components/NotifyDialog";
 import { DetailHeader } from "@/app/components/DetailHeader";
 import { InfoGrid, InfoField } from "@/app/components/InfoGrid";
 import { StatusBadge } from "@/app/components/StatusBadge";
+import { AccountLifecycleActions } from "@/app/components/AccountLifecycleActions";
 
 export default function AdminUserDetailPage() {
   const t = useTranslations("adminUsers");
@@ -102,6 +103,13 @@ export default function AdminUserDetailPage() {
         loading={loading}
         backHref="/admin"
         backLabel={t("backToList")}
+      />
+
+      <AccountLifecycleActions
+        userId={detail.id}
+        status={detail.status}
+        namespace="adminUsers"
+        onChanged={load}
       />
 
       <InfoGrid>

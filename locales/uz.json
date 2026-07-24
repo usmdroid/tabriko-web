@@ -228,7 +228,19 @@
     "sendSuccessNoDevice": "Xabarnoma saqlandi. Foydalanuvchida faol qurilma yo'q — ilovani ochganda ko'radi.",
     "colEmail": "Email",
     "colBirthday": "Tug'ilgan sana",
-    "notSet": "—"
+    "notSet": "—",
+    "archiveBtn": "Arxivlash",
+    "archiveConfirm": "Bu accountni arxivlaysizmi? U ilovada ko'rinmay qoladi (bazada saqlanadi).",
+    "deleteBtn": "O'chirish",
+    "deleteTitle": "Accountni o'chirish",
+    "deleteReasonLabel": "O'chirish sababi",
+    "deleteReasonPlaceholder": "Sababni yozing",
+    "deleteConfirm": "O'chirish",
+    "restoreBtn": "Tiklash",
+    "restoreConfirm": "Bu accountni tiklaysizmi?",
+    "statusArchived": "Arxivlangan",
+    "needArchiveFirst": "Avval arxivlang",
+    "cancel": "Bekor qilish"
   },
   "adminCreators": {
     "detailTitle": "Kreator tafsiloti",
@@ -324,7 +336,18 @@
     "kindMESSAGE": "Xabar",
     "kindWARNING": "Ogohlantirish",
     "kindSUSPENSION": "Suspend",
-    "kindREACTIVATION": "Faollashtirildi"
+    "kindREACTIVATION": "Faollashtirildi",
+    "archiveBtn": "Arxivlash",
+    "archiveConfirm": "Bu accountni arxivlaysizmi? U ilovada ko'rinmay qoladi (bazada saqlanadi).",
+    "deleteBtn": "O'chirish",
+    "deleteTitle": "Accountni o'chirish",
+    "deleteReasonLabel": "O'chirish sababi",
+    "deleteReasonPlaceholder": "Sababni yozing",
+    "deleteConfirm": "O'chirish",
+    "restoreBtn": "Tiklash",
+    "restoreConfirm": "Bu accountni tiklaysizmi?",
+    "statusArchived": "Arxivlangan",
+    "needArchiveFirst": "Avval arxivlang"
   },
   "adminApplications": {
     "pageTitle": "Arizalar",
@@ -440,7 +463,8 @@
       "orders": "Buyurtmalar",
       "moderation": "Moderatsiya",
       "stats": "Statistika",
-      "settings": "Sozlamalar"
+      "settings": "Sozlamalar",
+      "deleted": "O'chirilganlar"
     },
     "brandSuffix": "Admin",
     "roleSuperadmin": "Super Admin",
@@ -558,5 +582,22 @@
       "loadError": "Rekvizitlarni yuklashda xatolik",
       "saveError": "Rekvizitni saqlashda xatolik"
     }
+  },
+  "adminDeleted": {
+    "title": "O'chirilgan accountlar",
+    "reload": "Yangilash",
+    "loadFailed": "Yuklab bo'lmadi",
+    "empty": "O'chirilgan account yo'q",
+    "colName": "Ism",
+    "colRole": "Rol",
+    "colPhone": "Telefon",
+    "colDeletedAt": "O'chirilgan sana",
+    "colDeletedBy": "Kim o'chirdi",
+    "colReason": "Sabab",
+    "colActions": "Amallar",
+    "restoreBtn": "Tiklash",
+    "restoreConfirm": "Bu accountni tiklaysizmi?",
+    "actionFailed": "Amal bajarilmadi",
+    "subtitle": "Bu accountlar o'chirilgan. Qachon, kim tomonidan va nima sababdan o'chirilgani ko'rsatilgan."
   }
 }

@@ -1,5 +1,7 @@
+"use client";
+
 import { ReactNode } from "react";
-import { Trash2, AlertTriangle } from "lucide-react";
+import { Trash2, AlertTriangle, Camera, ImageUp } from "lucide-react";
 
 interface ProfileBannerProps {
   bannerUrl?: string | null;
@@ -11,6 +13,10 @@ interface ProfileBannerProps {
   canDeleteImages?: boolean;
   onDeleteAvatar?: () => void;
   onDeleteBanner?: () => void;
+  // Upload avatar/banner (SUPERADMIN only)
+  canUploadImages?: boolean;
+  onUploadAvatar?: (file: File) => void;
+  onUploadBanner?: (file: File) => void;
   // Moderation: warn button next to name (SUPERADMIN or MODERATOR)
   canWarn?: boolean;
   onWarnName?: () => void;
@@ -34,11 +40,16 @@ export function ProfileBanner({
   canDeleteImages,
   onDeleteAvatar,
   onDeleteBanner,
+  canUploadImages,
+  onUploadAvatar,
+  onUploadBanner,
   canWarn,
   onWarnName,
 }: ProfileBannerProps) {
   const showBannerDelete = canDeleteImages && !!onDeleteBanner;
   const showAvatarDelete = canDeleteImages && !!onDeleteAvatar;
+  const showBannerUpload = canUploadImages && !!onUploadBanner;
+  const showAvatarUpload = canUploadImages && !!onUploadAvatar;
   const showNameWarn = canWarn && !!onWarnName;
 
   return (
@@ -61,6 +72,25 @@ export function ProfileBanner({
           >
             <Trash2 size={28} className="text-white drop-shadow" />
           </button>
+        )}
+
+        {showBannerUpload && (
+          <label
+            title="Muqova yuklash"
+            className="absolute top-2 right-2 z-10 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-black/55 text-white hover:bg-black/70 transition-colors cursor-pointer"
+          >
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onUploadBanner!(f);
+                e.target.value = "";
+              }}
+            />
+            <ImageUp size={16} />
+          </label>
         )}
 
         {/* Avatar pinned to bottom-left, overlapping banner bottom edge */}
@@ -86,6 +116,24 @@ export function ProfileBanner({
             >
               <Trash2 size={18} className="text-white drop-shadow" />
             </button>
+          )}
+          {showAvatarUpload && (
+            <label
+              title="Rasm yuklash"
+              className="absolute -bottom-0.5 -right-0.5 z-10 inline-flex items-center justify-center w-7 h-7 rounded-full bg-accent text-white border-2 border-background shadow cursor-pointer hover:brightness-110 transition"
+            >
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onUploadAvatar!(f);
+                  e.target.value = "";
+                }}
+              />
+              <Camera size={13} />
+            </label>
           )}
         </div>
       </div>

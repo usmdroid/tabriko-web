@@ -12,6 +12,8 @@ import {
   reactivateCreator,
   deleteCreatorAvatar,
   deleteCreatorBanner,
+  uploadCreatorAvatar,
+  uploadCreatorBanner,
   postCreatorModeration,
   getCreatorModerationThread,
   getSession,
@@ -29,6 +31,7 @@ import { StatusBadge, WarningBadge } from "@/app/components/StatusBadge";
 import { InfoGrid, InfoField } from "@/app/components/InfoGrid";
 import { DetailHeader } from "@/app/components/DetailHeader";
 import { ProfileBanner } from "@/app/components/ProfileBanner";
+import { AccountLifecycleActions } from "@/app/components/AccountLifecycleActions";
 
 const TIER_LABEL: Record<CreatorTier, string> = {
   STANDARD: "Standart",
@@ -436,9 +439,35 @@ export default function AdminCreatorDetailPage() {
         canDeleteImages={isSuperadmin}
         onDeleteAvatar={() => setModal("deleteAvatar")}
         onDeleteBanner={() => setModal("deleteBanner")}
+        canUploadImages={isSuperadmin}
+        onUploadAvatar={async (file) => {
+          try {
+            await uploadCreatorAvatar(detail.id, file);
+            await load();
+          } catch {
+            setActionError(t("actionFailed"));
+          }
+        }}
+        onUploadBanner={async (file) => {
+          try {
+            await uploadCreatorBanner(detail.id, file);
+            await load();
+          } catch {
+            setActionError(t("actionFailed"));
+          }
+        }}
         canWarn={canWarn}
         onWarnName={() => setWarnTarget({ kind: "name" })}
       />
+
+      <div className="mt-4">
+        <AccountLifecycleActions
+          userId={detail.id}
+          status={(detail.accountStatus ?? "").toLowerCase()}
+          namespace="adminCreators"
+          onChanged={load}
+        />
+      </div>
 
       {/* Info grid */}
       <InfoGrid>
